@@ -1,0 +1,1030 @@
+%!TeX encoding = ISO-8859-1
+\chapter{Estado del arte}\label{capEstadoDelArte}
+Este capítulo presenta una descripción general a los conceptos más relevantes relacionados con esta tesis. 
+Se comienza con una breve introducción sobre la luz y se continúa explicando el concepto de iluminación global,
+luego radiosidad, se describien los problemas inversos de renderizado, problemas inversos de iluminación,
+optimización y por último se introduce la fotometría.
+
+%=================================================================
+\section{Introducción}\label{sec:intro_sart}
+Si bien los conceptos detrás de los fenómenos fisico-matemáticos de la interacción de la luz con la materia son 
+bien comprendidos en la actualidad, sigue siendo un problema complejo de resolver eficientemente. Esto es 
+debido a la múltiple cantidad de fenómenos visuales que la luz puede generar al interactuar con la materia, como 
+por ejemplo: la reflexión, el sangrado y las causticas \cite{Ritschel2012}. Esto lleva a que muchos de los
+algoritmos utilizados actualmente para modelar las interacciones de la luz con los objetos de su 
+entorno, utilicen modelos que contemplan un subconjunto de todas las posibles interacciones o estas se 
+modelen de manera parcial.
+En pocas palabras se utilizan modelos simplificados de los introducidos por la teoría que estudia la luz, siendo las 
+primeras técnicas de computación gráfica utilizadas para generar imágenes realistas no más que un conjunto
+de ingeniosas técnicas (no necesariamente basadas en la teoría) que generaban, ante los ojos del que las
+visualizaba, la sensación de realismo.
+No es sino hasta las décadas de 1970 y 1980 cuando los avances en las técnicas y capacidad de cómputo
+permiten modelar la luz de mejor manera \cite{Foley1994}, siendo un ejemplo de técnicas basadas en, o más
+cercanas a, la física las de traza de rayos (\textit{ray tracing} \cite{Whitted1980}) y radiosidad
+(\textit{radiosity} \cite{Cohen1993}), existiendo también técnicas híbridas, utilizados para el cálculo de la
+iluminación global y la generación de imágenes foto realistas.
+
+%=================================================================
+\section{Iluminación global}\label{sec:iluminacion_global}
+El propósito principal de los modelos de iluminación es estudiar la emisión, reflexión y transmisión de la luz en
+el ambiente, con el objetivo de calcular el color, la intensidad y demás características de la luz en un punto dado,
+que pertenece al mismo, y contemplando los distintos fenómenos involucrados \cite{Foley1994}.
+Algunos modelos simplificados no calculan el color para todo posible punto sino que lo hacen para puntos 
+concretos (visibles) que pueden ser por ejemplo determinados por los píxeles de la imagen y su proyección
+en la escena tomando el punto de vista de la cámara.
+
+En general, la luz que llega al punto A desde otro punto B es considerada como luz directa si esta es emitida
+por B. Si dicha luz fue reflejada o transmitida antes de llegar a A, en otro punto C (o conjunto de puntos), 
+entonces es considerada como luz indirecta \cite{Ritschel2012}. La luz está compuesta por ambos tipos; 
+directa e indirecta. En computación gráfica se consideran como modelos de iluminación local a aquellos
+que consideran únicamente la iluminación directa y modelos de iluminación global a aquellos que consideran
+también la iluminación indirecta. En el trabajo de Jensen \cite{Jensen2001} podemos encontrar una definición
+más formal que define a la iluminación global como la simulación, basada en las características físicas de la luz, 
+que toma en cuenta toda la dispersión de la luz en un modelo sintético. Siendo su principal objetivo
+simular todas las reflexiones de la luz en dicho modelo y permitiendo predecir de manera precisa la intensidad
+de la luz en cualquier punto del modelo, i.e., cómo la luz es emitida por las fuentes luminosas y cómo interactúa
+con las superficies de la escena.
+
+Esta tesis se basa en el cálculo de la iluminación global en un ambiente por medio de la técnica de radiosidad.
+%---------------------------------------------------------------------------------------------------------------------------------
+\subsection{Ecuación de la luz}\label{subsec:ec_luzl}
+De acuerdo a Sakas et al.~\cite{Sakas2001}, la ``ecuación completa de radiancia'' relaciona la interacción
+global entre la luz y la materia, incluyendo fenómenos como el transporte del fotón en medios participativos,
+la polarización, la fosforescencia y la fluorescencia. Esta ecuación puede ser expresada brevemente en 
+notación de operadores como sigue:
+\begin{align}\label{ec-capEstadoDelArte:RadEq}
+I= (\mathcal{M} + \mathcal{V}) \left[ \varepsilon + \mathcal{PA}I + \mathcal{KF}I\right]
+\end{align}
+donde $I$ es la intensidad de la luz en la longitud de onda $\lambda$ que llega al punto $r$ desde la dirección
+$\vec{w}$ y en el tiempo $t$ (ver Figura~\ref{fig-cap2:radiance}), $\mathcal{M}$ representa la atenuación de la 
+radiancia desde el punto $s$, $\mathcal{V}$ es la atenuación de la radiancia en el punto $a$ entre $r$ y $s$,
+$\varepsilon$ es la luz emitida en la longitud de onda $\lambda$ en el punto $s$ en dirección $\vec{w}$ y en
+el tiempo $t$, $\mathcal{P}$ es el operador de fosforescencia, $\mathcal{A}$ es el operador de absorción,
+$\mathcal{K}$ es la función de distribución bidireccional de superficie-dispersión (o BSSDF por sus siglas en 
+inglés) y $\mathcal{F}$ es el operador de fluorescencia.
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.4\textwidth]{./img/sart/radiance.png}
+\caption{Luz que llega al punto $r$ desde el punto $s$ y con dirección $\vec{w}$, pasando a través del punto
+$a$.}
+\label{fig-cap2:radiance}
+\end{figure}
+La ecuación anterior resulta muy compleja, sin embargo existen las siguientes versiones simplificadas:
+\begin{itemize}
+\item ``ecuación de rendering'' planteada por Kajiya \cite{Kajiya1986}
+\item ``ecuación volumétrica de renderizado'' planteada por Glassner \cite{Glassner1994}
+\end{itemize}
+En la ecuación de rendering la luz es transportada sin la presencia de un medio participativo, y la 
+ecuación volumétrica de renderizado sí incluye un medio participativo.
+De acuerdo con Kajiya \cite{Kajiya1986}, la ecuación de rendering es definida como sigue:
+\begin {align}\label{ec-capEstadoDelArte:RendEq}
+I(x,x')= g(x,x')\left[ \varepsilon(x,x') + \int_S \rho(x,x',x'')I(x',x'')dx''\right]
+\end {align}
+donde $I(x,x')$ representa la radiancia ($Wm^{-2}sr^{-1}$) que pasa de $x'$ y llega a $x$ (ver 
+Figura~\ref{fig-cap2:renderingeq}), el término geométrico $g(x,x')$ es igual a $0$ cuando $x$ y $x'$ están 
+ocluidos entre sí y $1/r^2$ en otro caso, siendo $r$ la distancia entre ellos. $\varepsilon(x,x')$ está 
+relacionado con la intensidad de la luz que es emitida desde $x'$ hacia $x$, y $\rho(x,x',x'')$ está también
+relacionado con la intensidad de la luz que es dispersada desde $x''$ hacia $x$ por un parche en $x'$
+(esta es denominada función de distribución bidireccional de reflectancia, o BRDF por sus siglas en inglés).
+La ecuación de rendering es invariante en el tiempo (la difracción no es calculada), el medio posee un índice
+de refracción homogéneo y no participa por sí mismo en la dispersión de la luz. Finalmente, la ecuación no
+está influida por la longitud de onda o por fenómenos de polarización de la luz.
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.4\textwidth]{./img/sart/renderingeq.png}
+\caption{Algunos elementos de la ecuación de rendering.}
+\label{fig-cap2:renderingeq}
+\end{figure}
+
+Se han propuesto varias técnicas que toman diferentes enfoques a la hora de resolver estas ecuaciones, estos
+enfoques por lo general tratan un conjunto distinto de los fenómenos de la luz. 
+Ritschel et al. \cite{Ritschel2012} establecieron que los enfoques clásicos para computar la iluminación global, de
+forma interactiva, son: métodos discretos de ordenadas \cite{Chandrasekar1950}, elementos finitos (radiosidad)
+\cite{Goral1984}, traza de rayos de Monte Carlo \cite{Kajiya1986}, mapeado de fotones \cite{Jensen1996},
+radiosidad instantánea \cite{Keller1997}, iluminación basada en múltiples luces \cite{Walter2005,Hasan2007},
+iluminación global basada en puntos \cite{Christensen2008,Ritschel2009} y transferencia de radiancia 
+pre-computada \cite{Sloan2002}.
+A través de estas técnicas se intenta implementar un amplio rango de fenómenos: iluminación directa (local) e
+indirecta (global), \textit{ambient occlusion}, iluminación natural (aquella proveniente del sol), rebotes simple y
+múltiples, cáusticas, rebotes difusos y superficies brillosas (``\textit{glossy}'' en inglés), y difusión.
+Si bien la mayoría de las técnicas propuestas intentan resolver las ecuaciones de renderizado tomando distintos
+enfoques existen algunos fenómenos que son estudiados por la mayoría. Estos fenómenos afectan
+significativamente el tiempo de cómputo necesario por estas y son los siguientes; varias fuentes de luz, distintos
+materiales para las superficies y varios rebotes de la luz. Además las técnicas antes mencionadas adolecen de
+los siguientes problemas abiertos; cantidad de rebotes, escalabilidad y el uso de fuentes luminosas complejas.
+
+Esta tesis realiza el estudio de cómo calcular eficientemente la iluminación producida por fuentes luminosas 
+complejas.
+%---------------------------------------------------------------------------------------------------------------------------------
+\subsection{Trabajos relacionados}\label{subsec:trab_rel_gi}
+Aquí se indican algunas de las líneas de trabajo seguidas en los últimos años, y que históricamente son base
+de las técnicas actuales, con respecto a iluminación global que puedan ser utilizados para generar imágenes:
+
+\begin{itemize}
+%\item Chandrasekar \cite{Chandrasekar1950}, propone una técnica sobre \textit{discrete ordinate methods}.
+\item Goral et al. \cite{Goral1984}, proponen la técnica de \textit{radiosity} para el cálculo de la luz en la 
+computación gráfica.
+\item Cohen et al. \cite{Cohen1986}, proponen una técnica para calcular la radiosidad de manera eficiente
+utilizando niveles jerárquicos.
+\item Kajiya \cite{Kajiya1986}, propone una técnica basada en \textit{Monte Carlo ray tracing}.
+\item Ward et al. \cite{Ward1988}, proponen una técnica denominada \textit{irradiance caching}. Donde plantean
+una técnica eficiente para el cálculo de las interreflecciones entre superficies difusas y especulares utilizando
+métodos de Monte Carlo.
+\item Kuchkuda \cite{Kuchkuda1988}, propone una técnica basada en \textit{ray tracing}.
+\item Jensen \cite{Jensen1996}, propone una técnica denominada \textit{photon mapping}.
+\item Keller\cite{Keller1997}, propone una técnica llamada \textit{instant radiosity}. La técnica se basa en 
+convertir la iluminación en un número enorme de puntos de luz generados automáticamente (de forma 
+aproximada).
+\item Jensen~\cite{Jensen2001}, propone un avance sobre la técnica sobre \textit{photon mapping}. En esta 
+propuesta se permite calcular la iluminación global en escenas que no pueden ser manejadas por métodos sin
+sesgo basados en métodos de Monte Carlo.
+\item Sloan et al. \cite{Sloan2002}, proponen la técnica \textit{precomputed radiance 
+transfer}.
+La técnica se basa en pre-computar y realizar la compresión de los efectos de iluminación y sombreado que
+luces distantes provocan en la escena.
+\item Dachsbacher y Stamminger \cite{Dachsbacher2005}, proponen la técnica de \textit{reflective shadow
+maps}.
+En esta se considera a los mapas de sombra como fuentes de luz indirecta, con el objetivo de lograr la
+generación de iluminación indirecta, pero se niega la existencia de múltiples interreflexiones de luz entre las
+superficies.
+\item Walter et al. \cite{Walter2005}, proponen una técnica sobre \textit{many-light-based global illumination}. Esta
+técnica utiliza un árbol binario de iluminación que por medio de cortes agrupa las fuentes de luz en
+clusters permitiendo reducir de forma significativa el costo necesario para calcular la iluminación de fuentes
+variadas. La técnica es capaz de manejar geometrías arbitrarias, materiales no difusos y varias fuentes de
+iluminación, como por ejemplo luces puntuales, modelos de sol o cielo e iluminación indirecta.
+\item Nijasure et al. \cite{Nijasure2005}, proponen una técnica basada en el uso de GPUs para obtener un
+muestreo de la radiancia incidente en grillas uniformes tridimensionales que permite tomar ventaja del poder
+de cómputo y funcionalidades de la GPU para lograr mejoras significativas de performance. 
+El algoritmo implementado no tiene dependencias más que el hardware utilizado, por lo que la aceleración
+obtenida depende de la aceleración del hardware.
+\item Ha\v{s}an et al. \cite{Hasan2007}, proponen una técnica que implementa \textit{many-light-based global illumination} en GPUs. Este enfoque es capaz de computar de forma veloz, y con gran calidad, problemas con muchas fuentes de iluminación, donde tratan el problema como la suma de todas las columnas
+de una matriz. Su uso puede resultar muy útil para realizar una vista previa, rápida, en aplicaciones
+cinematográficas y arquitectónicas para el diseño de la iluminación.
+\item Christensen \cite{Christensen2008}, propone una técnica llamada \textit{point-based global illumination}. Esta técnica produce resultados 4 a 10 veces más rápido que técnicas basadas en \textit{ray tracing},
+utilizando menos memoria, no tiene ruido, y su tiempo de ejecución no aumenta debido al desplazamiento
+mapeado de superficies, sombreadores complejos o muchas fuentes de luz complejas. El método primero
+organiza las superficies en un \textit{octree} (árbol octal) y calcula los datos para cada uno de sus nodos. Luego,
+para cada punto de recepción, se recorre el octree, rasterizando las contribuciones de color de los elementos de superficie y los clústeres, y el sangrado del color se calcula como una suma ponderada de los píxeles
+rasterizados. El método es significativamente más rápido y más eficiente en el uso de memoria que métodos precursores.
+\item Ritschel \cite{Ritschel2009}, propone un avance de la técnica \textit{point-based global illumination}.
+El método se basa en la recolección final paralela, realizándola por completo en la GPU. La técnica realiza un micro renderzado, que a través de una representación de la escena basada en puntos jerárquicos realiza una recolección por muestras de importancia de BRDF, permitiendo la computación de la iluminación indirecta de forma eficiente (soportando superficies tanto difusas como brillantes).
+\item Gautron et al. \cite{Gautron2008}, proponen una técnica sobre \textit{radiance cache splatting} que
+es basada en la técnica de \textit{radiance caching} y en el uso de imágenes para recoger la radiancia final
+de la escena. Este trabajo se enfoca en evitar la necesidad de complejos algoritmos y el uso de estructuras de datos para así poder ser aplicado en GPUs manteniendo una calidad de reproducción similar a la irradiación
+clásica y al \textit{radiance caching}. Esto resulta en una mejora considerable en el tiempo de cómputo.
+\item Ritschel et al. \cite{Ritschel2008}, proponen una técnica sobre \textit{imperfect shadow maps}. En
+esta técnica se evalúan mapas aproximados de sombra sobre muchos puntos de luz en cada paso de la GPU, lo
+que resulta en una mejora considerable en el tiempo de cómputo.
+\item Wang et al. \cite{Wang2009}, proponen la técnica de \textit{photon mapping} en GPU.
+\item Fernández et al. \cite{fernandez2012}, proponen la técnica de \textit{low-rank Radiosity} para mejorar
+la velocidad de cómputo de la radiosidad.
+\end{itemize}
+
+No es el objetivo de este capítulo, ni de esta tesis, hablar en específico de cada una de estas técnicas, pero si
+se dan a continuación detalles generales de las técnicas más importantes y referencias que pueden ser consultadas
+para entender en profundidad los coneptos detrás de las mismas.
+
+Es de destacar la existencia, entre las técnicas de iluminación global, de aquellas que dependen del punto de vista
+y aquellas que no. En las técnicas que dependen del punto de vista (ejemplos son \textit{ray tracing} e
+\textit{instant radiosity}) la luz no se calcula para todos los puntos de la escena sino que se calcula para aquellos
+que pueden ser vistos desde el punto de vista. Estas técnicas son mayormente utilizadas cuando se tienen
+superficies especulares. 
+Ejemplos de técnicas que no dependen del punto de vista son \textit{photon tracing} y \textit{radiosity}. Estas
+técnicas son utilizadas cuando se tienen superficies difusas.
+
+De los trabajos antes mencionados se destacan cuatro técnicas principales, las cuales son: \textit{Ray tracing},
+\textit{Photon Mapping}, \textit{Instant Radiosity} y \textit{Radiosity}.
+
+\textit{Ray tracing} es una técnica muy utilizada en la computación gráfica basada en la traza del
+camino de los rayos de luz a través de píxeles en el plano de vista. Esta técnica es capaz de simular varios
+efectos, como la reflexión o la refracción, logrando generar imágenes que se asemejan en gran medida a las
+reales pero a un costo computacional realmente alto. Esta técnica fue introducida por Whitted~\cite{Whitted1980}
+y se basa en el algoritmo de \textit{Ray Casting} propuesto por Appel~\cite{Appel1968}.
+Sin entrar en gran detalle el algoritmo de \textit{ray tracing} consiste en trazar rayos (representados por líneas de color
+rojo en la Figura \ref{fig-cap2:raytracing}) que parten del punto de vista (cámara en la imagen) y pasan a
+través del plano de vista (donde se genera la imagen) determinando un píxel. 
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.55\textwidth]{./img/sart/raytracing.png}
+\caption{Representación simple de trazado de rayos. La imagen es generada en el plano de vista (que es 
+dividido en píxeles). Se trazan rayos desde el punto de vista (cámara) que pasan a través de los píxeles en
+la imagen e intersectan con los objetos de la escena. El color del píxel es analizado calculando la luz en el 
+objeto intersectado (tomando en cuenta su material, que puede provocar el trazado de nuevos rayos en la
+escena). Para el cálculo además se trazan rayos hacia las fuentes de luz para calcular la generación de
+sombras.}
+\label{fig-cap2:raytracing}
+\end{figure}
+Ese píxel es pintado con el color correspondiente al que tiene la línea trazada en el punto donde intersecta con
+el objeto más cercano a ella en la escena. El cálculo del color de dicho píxel se realiza trazando también rayos
+(también representados por líneas, pero de color verde) hacia las fuentes de luz tomando en cuenta tanto oclusiones
+(y el tipo de superficie de los objetos que causan las oclusiones) a la vez del tipo de superficie del objeto intersectado 
+en primer lugar. Las superficies pueden tener distintos tipos de propiedades (como por ejemplo ser superficies
+especulares o difusas), la complejidad de los distintos tipos de superficies pueden dar la necesidad de la traza
+de rayos adicionales (las reflexiones son un ejemplo donde se necesita la traza de rayos de forma recursiva
+para el punto dado). A su vez, a cada objeto se le es sumada la luz de ambiente.
+
+Por otro lado, la técnica de \textit{photon mapping} introducida por Jensen~\cite{Jensen1996}, es una técnica
+de traza de rayos basada en el concepto del fotón (\textit{photon} en inglés) que consiste en dos pasos (ver
+Figura \ref{fig-cap2:photonMapping}):
+\begin{enumerate}
+\item Trazado del fotón (\textit{Photon Tracing}) donde se construye un mapa de fotones salientes desde las
+luces que llegan a los distintos objetos en la escena. Este paso es independiente del punto de vista. El mapa de fotones es almacenado en la medida que los fotones colisionan con superficies difusas (o más bien superficies no
+especulares ya que estas no aportan información dado que la probabilidad de que un fotón incida por la dirección
+especular es muy pequeña y cercana a cero).
+\item Radiación estimada (\textit{Radiance Estimate}) donde se estima la radiación que recibe un punto en la
+escena por medio de la estimación de densidad. Este paso es dependiente del punto de vista.
+\end{enumerate}
+En esta técnica los fotones representan paquetes de energía, de volumen infinitesimal, que son transmitidos
+en la escena por las fuentes de luz que se transportan en línea recta desde su punto de partida a través de su
+dirección original.
+\begin{figure}[!h]
+\begin{center}
+\subfigure[Trazado de fotones.]{
+\includegraphics[scale=0.45]{./img/sart/photonMapping1.png}
+\label{fig-cap2:photonMappingA}
+}
+\subfigure[Radiación emitida.]{
+\includegraphics[scale=0.45]{./img/sart/photonMapping2.png}
+\label{fig-cap2:photonMappingB}
+}
+\end{center}
+\caption{Estapas de la técnica de photon mapping \cite{Pedresen2013}.}
+\label{fig-cap2:photonMapping}
+\end{figure}
+
+Por último tenemos la técnica de \textit{Instant Radiosity} descrita por Keller \cite{Keller1997}. Esta técnica
+también se basa en la traza de fotones y en dos pasos:
+\begin{enumerate}
+\item Una cantidad pequeña de fotones es trazado desde las fuentes de luz impactando en los distintos 
+objetos de la escena. Estos puntos son llamados VPL por sus siglas en inglés ($Virtual$ $Point$ $Lights$). Estos puntos
+son utilizados para calcular una primer aproximación de la radiancia difusa utilizando una recorrida casi aleatoria.
+\item Se renderiza la escena una vez por cada VPL utilizando dicho VPL como la fuente de luz única y utilizando
+la técnica de Z-buffer \cite{Catmull1974} con mapas de sombra.
+\end{enumerate}
+La imagen final es computada acumulando cada renderizado de cada VPL, teniendo como resultado la simulación
+de varios rebotes de la luz, en superficies lambertianas (ver Seccion \ref{sec:radiosity}), debido a la superposición
+de los mapas de sombras.
+Los resultados finales obtenidos son similares a los obtenidos por radiosidad.
+
+Esta tesis se basa en la técnica de radiosidad y fuertemente en el trabajo realizado por Fernández et al.
+\cite{fernandez2012} extendiéndolo a fuentes de iluminación complejas, i.e., fuentes de iluminación para las
+cuales la magnitud de su emisión depende de la dirección que se considere (siendo el ejemplo más claro las
+luminarias y el contraejemplo más claro una luz difusa, que emite de forma constante la misma cantidad de
+luz en todas las direcciones).
+%=================================================================
+\section{Radiosidad}\label{sec:radiosity}
+La radiosidad es la técnica de iluminación global utilizada en esta tesis para el cálculo de la iluminación. En esta
+sección se tratan los aspectos generales necesarios para comprender su utilización en el contexto del trabajo
+realizado. Esta técnica ha sido objeto de estudio en las últimas décadas y existen excelentes referencias en
+los trabajos presentados por Cohen et al. \cite{Cohen1993} y Glassner \cite{Glassner1994} que pueden ser
+consultadas para comprender en mayor profundidad los aspectos fisico-matématicos detrás de la misma.
+
+El método de radiosidad es introducido por primera vez por Goral et al. \cite{Goral1984}, en el área de la 
+computación gráfica, como un algoritmo de iluminación global, permitiendo el cálculo en escenas cuyos objetos 
+poseen superficies lambertianas. Desde entonces esta técnica ha sido utilizada en gran diversidad de áreas de 
+diseño y simulación por computadora \cite{Dutre2006}. El término ``radiosidad'' se refiere a la cantidad de energía 
+lumínica, emitida y reflejada por la superficie, que parte de la misma y es medida por unidad de área (W/$m^2$)
+\cite{Cohen1986}.
+Las superficies lambertianas son aquellas que tienen reflexión difusa ideal. Estas aparentan tener un brillo constante
+independientemente del ángulo de vista del observador. En la Figura \ref{fig-cap2:superficies_reflexion}
+se pueden ver tres tipos distintos de superficies y cómo estas reflejan la luz.
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.8\textwidth]{./img/sart/superficies_reflexion.pdf}
+\caption{Tipos de reflexiones más comunes.}
+\label{fig-cap2:superficies_reflexion}
+\end{figure}
+Las superficies lambertianas simplifican el termino $\rho$ de la ecuación de rendering (Ecuacion~\eqref{ec-capEstadoDelArte:RendEq})
+transformándola en la ``ecuación de radiosidad'' según la Ecuación~\ref{ec-capEstadoDelArte:RadEq}).
+\begin{align}
+\label{ec-capEstadoDelArte:RadEq}
+B(x)=E(x) + \rho(x)\int_S B(x')G(x,x')dA'
+\end{align}
+En esta ecuación $B(x)$ representa la radiosidad en el punto x, $E(x)$ es la emisión de luz en x, $\rho(x)$ es la
+reflectividad lambertiana difusa del material en el punto x, y $G(x,x')$ es el factor geométrico que determina
+cuánto de la radiosidad en $x'$ contribuye a la radiosidad de x \cite{Cohen1993}.
+La ecuación de radiosidad puede ser discretizada a través del uso de una metodología basada en elementos finitos,
+donde las superficies de la escena son discretizadas en un conjunto finito de polígonos o de ``parches'' y a su
+vez todos los términos de la Ecuación~\ref{ec-capEstadoDelArte:RadEq}
+son transformados en un conjunto finito de elementos (discretos) donde para cada parche $i$ se tendrá un único
+componente $B(x)$, $\rho(x)$ y $E(x)$. En otras palabras $B(x)$ es transformada en $B_i$, $E(x)$ en $E_i$,
+$\rho(x)$ en $R_i$ y $G(x,x')$ en $\mathbf{F}(i,j)$ quedando así la ecuación transformada en el conjunto de
+ecuaciones lineales descrito en la Ecuación~\ref{ec-capEstadoDelArte:DiscRadEq}.
+\begin{align}
+\label{ec-capEstadoDelArte:DiscRadEq}
+B_i= E_i + R_i\sum_{j=1\ldots n} B_j\mathbf{F}(i,j) \;\;\;\;, \;\;\;\; \forall i \in \{1\ldots n\}
+\end{align}
+Este conjunto de ecuaciones es expresado de forma algebraica en la siguiente ecuación:
+\begin{align}
+\label{ec-capEstadoDelArte:radiosity}
+(\mathbf{I} - \mathbf{RF})B=E
+\end{align}
+donde $\mathbf{I}$ es la matriz identidad, $\mathbf{R}$ es una matriz diagonal conteniendo los valores
+$R_i$ (con los índices de reflectancia de cada parche), $\mathbf{F}$ es la matriz de factores de forma, $B$ 
+es un vector conteniendo todas las radiosidades a ser encontradas, y $E$ es otro vector conteniendo la emisión
+de la escena. El factor de forma $\mathbf{F}(i,j)$ es definido como un número entre 0 y 1, que indica la fracción
+de potencia luminosa emitida por el parche $i$ que llega al parche $j$. Los factores de forma pueden ser
+calculados utilizando la Ecuación~\ref{ec-capEstadoDelArte:formfactor}.
+\begin{align}
+\label{ec-capEstadoDelArte:formfactor}
+\mathbf{F}(i,j)=\frac{1}{A_i}\int_{A_i}\int_{A_j}G(x_{A_i},x_{A_j})dx_{A_j}dx_{A_i} 
+\end {align}
+Este cálculo es complejo, debido a la necesidad de resolver la integral doble anterior y a la necesidad de calcular
+qué parches son visibles entre sí. Además es necesario calcular $n^2$ factores de forma (para una escena con 
+$n$ parches) lo que hace de este un proceso costoso computacionalmente. Debido a esto se han desarrollado
+varias técnicas que pretenden hacer más eficientes los cálculos de los factores de forma (ver Sección 
+\ref{subsec:form_factors}).
+
+En el problema inverso la matriz de radiosidad $\mathbf{M}=(\mathbf{I}-\mathbf{RF})^{-1}$ contiene la
+información de la radiosidad global de la escena. En esta tenemos que cada elemento $\mathbf{M}(i,j)$ 
+contiene la contribución de la emisión en el parche $j$ de la radiosidad final en el parche $i$. 
+Por lo tanto, es posible calcular la radiosidad final en el parche $i$ por medio de un único producto escalar
+entre la fila $\mathbf{M}(i,:)$ y el vector de emisión $E$. Sumado a esto, si se tiene una geometría (escena) fija,
+donde solo varía la luz emitida (posición o cantidad de luz emitida), entonces la matriz $\mathbf{M}$ no cambia.
+De esta manera es posible utilizar la matriz inversa de la radiosidad (o una aproximación de esta) para realizar
+cientos de cálculos de radiosidad por segundo y obteniendo resultados con una iluminación que considera infinitos
+rebotes. En la Sección \ref{subsec:radiosity_matriz_inversa} se dan más detalles de la matriz inversa de la radiosidad
+y su uso para el cálculo de la iluminación.
+%----------------------------------------------------------------------------------------------------------------------------------
+\subsection{Factores de forma}\label{subsec:form_factors}
+El argumento geométrico utilizado para el cálculo de los factores de forma se llamada analogía de Nusselt. En
+esta se expresa la relación, sin tomar en cuenta la visibilidad, entre un diferencial de área y una superficie dada.
+Una representación gráfica de dicha analogía puede ser observada en la Figura \ref{fig-cap2:nusselt} donde en
+particular en la Figura \ref{fig-cap2:nusseltA} tenemos una hemiesfera centrada en un diferencial de superficie
+cuyo radio es 1, donde se proyecta el parche. Luego de ser proyectado sobre la hemiesfera se vuelve a proyectar,
+de forma ortogonal, a la base de la hemiesfera (un círculo de radio 1). La fracción del área de la base que está
+cubierta por la proyección del parche es equivalente al valor del factor de forma entre el diferencial de área y el
+parche, o sea, es igual a la porción de potencia emitida del diferencial de área hacia el parche. Luego en la
+Figura \ref{fig-cap2:nusseltB} se muestra que cualquier objeto que cubra la misma área en la hemiesfera tendrá
+el mismo factor de forma, ya que ocupará el mismo ángulo sólido.
+\begin{figure}[!h]
+\begin{center}
+\subfigure[Analogía de Nusselt.]{
+\includegraphics[scale=0.3]{./img/sart/nusselt.png}
+\label{fig-cap2:nusseltA}
+}
+\subfigure[Áreas con el mismo factor de forma.]{
+\includegraphics[scale=0.3]{./img/sart/nusselt2.png}
+\label{fig-cap2:nusseltB}
+}
+\end{center}
+\caption{Factores de forma del diferencial de área de un elemento, calculado usando la proyección del hemisferio y luego otra en el disco.}
+\label{fig-cap2:nusselt}
+\end{figure}
+Debido a que todos los parches visibles se proyectan en áreas disjuntas en la base de la hemiesfera, la suma de
+todas las áreas no puede ser superior al área de la base, porque los factores de forma no toman valores
+negativos. Por tanto, si sobre un parche $i$ cualquiera se genera una hemiesfera de radio 1 y se proyectan todos
+los parches visibles desde $i$, la suma de todos los factores de forma obtenidos (área proyectada dividido área del
+círculo) no puede ser mayor a 1, esto es debido a que la radiación que deja una superficie se conserva, en
+consecuencia la siguiente ecuación:
+
+\begin{equation}\label{ec-capEstadoDelArte:sumaFF}
+\sum_{j=1}^{n}\mathbf{F}_{ij} \leq 1, \forall i
+\end{equation}
+
+Según Cohen et al. \cite{Cohen1993} existen dos categorías que diferencian a los algoritmos que resuelven el
+cálculo de los factores de forma: aquellos que utilizan un enfoque basado en el cálculo de los factores de forma
+a partir de dos áreas, y aquellos que utilizan un diferencial de área y un área. En estos últimos el diferencial de 
+área representa un punto infinitesimal, que es sencillo de utilizar, y por otro lado el área depende de la forma 
+del parche, complejizando el cálculo de los factores de forma.
+Debido a la complejidad de realizar los cálculos sobre distintas formas, y a que el cálculo con diferenciales de
+área tiene una aplicación más general, existe mayor cantidad de algoritmos que pertenecen a la categoría de
+diferencial y área.
+
+Uno de los métodos más aplicados para realizar el cálculo de los factores de forma, con el enfoque de áreas, está
+basado en la utilización de la integración de Monte Carlo. En dicho método, dados dos parches $i$ y $j$ entre los
+que se desea calcular el factor de forma $\mathbf{F}_{ij}$, se toman al azar y con distribución uniforme $n$
+pares de puntos $[x_i,x_j]$, donde $x_i$ pertenece al parche $i$ y $x_j$ pertenece al parche $j$. 
+Luego se evalúa si hay visibilidad entre los pares de puntos por medio del trazado de $n$ rayos entre cada par 
+$[x_i,x_j]$.
+
+Por otro lado Cohen et al. \cite{Cohen1985} proponen la técnica del hemi-cubo para realizar el cálculo de los
+factores. Esta técnica toma un parche $i$ cualquiera y calcula los factores de forma $\mathbf{F}_{ij}$ con todos
+los parches $j$ de la escena. Esto se realiza utilizando el algoritmo de Z-buffer \cite{Catmull1974} para proyectar
+cada parche de la escena en las cinco caras de un medio cubo (hemi-cubo) que son subdivididas en píxeles. El 
+algoritmo de Z-buffer determina la distancia entre  el centro de proyección (baricentro del parche $i$) y cada
+parche $j$ que es visible a través del píxel dado, tomando para dicho píxel como parche visible aquel que retorne 
+menor distancia (ver Figura \ref{fig-cap2:hemicubo_cohen}).
+Luego de aplicado el método se tiene un hemi-cubo con la información de qué parche es visible a través de cada
+uno de sus píxeles. La principal ventaja del uso del algoritmo de Z-buffer es que su implementación es por
+hardware y por lo tanto su cómputo es muy eficiente. 
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.8\textwidth]{./img/sart/hemicubo_tecnica.png}
+\caption{El hemi-cubo y una representación gráfica de la proyección de parches en la escena a los píxeles que se encuentran sobre las caras del mismo.}
+\label{fig-cap2:hemicubo_cohen}
+\end{figure}
+Este algoritmo ha resultado muy exitoso para el cálculo eficiente de los factores de forma y es ampliamente utilizado
+en técnicas de radiosidad con este objetivo.
+La principal desventaja del método del hemi-cubo es que el uso de píxeles causa aliasing.
+Para contrarrestar este problema se deben utilizar hemi-cubos con mayor resolución lo que implica mayor costo de
+cómputo. Otro problema es el costo de realizar cinco proyecciones independientes (una por cara del hemi-cubo)
+por cada parche en la escena. Coombe et al. \cite{Coombe2004} estudian este problema y proponen cambiar la
+proyección en un hemi-cubo por una proyección estereográfica, que permite proyectar todo el hemisferio visible
+en una superficie acotada, de una forma similar a la analogía de Nusselt.
+Heidrich et al. \cite{Heidrich1998} proponen otro acercamiento que también utiliza una proyección parabólica.
+En esta la escena se proyecta sobre un paraboloide (técnica pensada originalmente para su aplicación en la
+construcción de los \textit{environment maps} \cite{Blinn1976}).
+
+Otro método para el cálculo de los factores de forma es el propuesto por Sillion et al. \cite{Sillion1989} en donde
+se proyectan los parches a un único plano que está por encima del diferencial de área por medio de un algoritmo
+de superficie.
+%----------------------------------------------------------------------------------------------------------------------------------
+\subsection{Radiosidad de rango bajo}\label{subsec:rad_rango_bajo}
+Una propiedad interesante, que sucede en muchas escenas, es la existencia de coherencia espacial
+\cite{Sutherland1974} entre los valores de la radiosidad de pares de parches que se encuentran cercanos entre
+si, i.e., dados dos pares de parches cercanos entre sí, estos poseen una vista muy similar de la escena. Debido a
+lo anterior, y siendo que cada fila $\mathbf{F}(i,:)$ es calculada basándonos en la vista de la escena desde el
+elemento $i$, y a que $\mathbf{R}$ es una matriz diagonal, tenemos que $\mathbf{RF}$ (ver Ecuación
+\ref{ec-capEstadoDelArte:radiosity}) tendrá un rango numérico bajo ya que tiene muchas filas similares. 
+El rango bajo de la matriz $\mathbf{RF}$ permite su factorización en dos matrices $\mathbf{U}_k$ y $\mathbf{V}_k^T$
+de tamaño $n \times k$ con $n \gg k$ y sin mayor pérdida de información.
+Existen varios trabajos que estudian las propiedades de rango bajo de la matriz de radiosidad entre ellos se
+encuentran: Baranoski et al. \cite{Baranoski1997}, Ashdown \cite{Ashdown2001}, Ha\v{s}an et al. \cite{Hasan2007}
+y Fernández \cite{Fernandez2009}.
+
+La radiosidad de rango bajo~\cite{Fernandez2009} (LRR por sus siglas en inglés) es una técnica que permite
+realizar esta factorización, tomando en consideración dicho rango bajo y aproximando la matriz $\mathbf{RF}$
+por el producto $\mathbf{U}_k\mathbf{V}_k^T$. $\mathbf{U}_k$ y $\mathbf{V}_k^T$ son matrices de
+tamaño $n \times k$ con $n \gg k$ que pueden ser computadas en $O(n^2)$ operaciones, y donde
+se requiere O($nk$) memoria para ser almacenadas (siendo $\mathbf{U}_k$ una matriz densa y
+$\mathbf{V}_k^T$ una matriz dispersa).
+Esta aproximación puede ser realizada sin perder información relevante de la escena y se basa en la técnica de
+dos niveles jerárquicos \cite{Cohen1986}, donde se tienen dos mallas con distinta granularidad, una malla
+gruesa de $k$ parches y una malla fina con $n$ elementos.
+Por lo tanto, tomando la Ecuación \ref{ec-capEstadoDelArte:radiosity} y sustituyendo $\mathbf{RF}$ tenemos la
+Ecuación \ref{ec-capEstadoDelArte:lrr1}, siendo $\tilde{B}$ una aproximación de $B$.
+\begin{align}
+\label{ec-capEstadoDelArte:lrr1}
+(\mathbf{I} - \mathbf{U}_k \mathbf{V}_k^T)\tilde{B}=E
+\end{align}
+Luego es posible utilizar la fórmula de Sherman-Morrison-Woodbury \cite{Golub2013} para calcular una aproximación
+de la matriz inversa de la radiosidad $\mathbf{B}$ como sigue:
+\begin{align}
+\mathbf{M} = (\mathbf{I}-\mathbf{RF})^{-1} \approx (\mathbf{I}+\mathbf{Y}_k\mathbf{V}_k^T) = \mathbf{\tilde{M}} \\ \nonumber \textrm{donde }\quad \mathbf{Y} = \mathbf{U}_k(\mathbf{I}-\mathbf{V}_k^{T}\mathbf{U}_k)^{-1} 
+\end{align}
+Para luego llegar a la reducción final de la Ecuación \ref{ec-capEstadoDelArte:radiosity} como el siguiente producto matriz-vector:
+$\tilde{B} = \mathbf{\tilde{M}}E$, que a su vez puede ser formulado como:
+\begin{equation}
+\label{eq-cap2:eq_RenderingEquation}
+{\tilde{B}} = {E}+\mathbf{Y}_k(\mathbf{V}_k^{T}{E}) 
+\end{equation}
+
+En escenas donde la geometría no cambia y la iluminación es dinámica ($E$ varía), parte del cómputo puede
+pre-computarse y ser reutilizado, porque las matrices de dimensión $n$$\times$$k$ llamadas $\mathbf{Y}_k$,
+$\mathbf{U}_k$ y $\mathbf{V}_k$ deben ser calculadas solo una vez. Por lo tanto, el resto de los cálculos
+ahora poseen complejidad $O(nk)$. Esto permite calcular la radiosidad en tiempo real para los problemas
+inversos de iluminación \cite{Fernandez2015}.
+Una de las principales desventajas de la técnica de LRR es que requiere el cálculo de todos los factores de forma de
+la escena, lo que impacta aumentando considerablemente el tiempo necesario para pre-computar la factorización.
+Además depende de la existencia de dos mallas de diferente granularidad, las cuales inciden en el tamaño de las
+matrices y en la precisión del cálculo de la aproximación de la radiosidad.
+
+Existen también otros métodos para calcular las matrices $\mathbf{U}_k$ y $\mathbf{V}_k^T$, como por
+ejemplo SVD \cite{Golub2013} y la factorización CUR \cite{Goreinov1997}. A su vez otros métodos han sido
+propuestos para acelerar la velocidad de cómputo de las matrices $\mathbf{Y}_k$ y $\mathbf{V}_k$, siendo
+ejemplos de esto los trabajos de Fernández y Besuievsky \cite{Fernandez2015}, y Aguerre y Fernández \cite{Aguerre2016}.
+
+La técnica de LRR propuesta por Fernández \cite{Fernandez2009} es utilizada para mejorar el desempeño de los
+algoritmos implementados en esta tesis.
+%----------------------------------------------------------------------------------------------------------------------------------
+\subsection{Matriz inversa de la radiosidad}\label{subsec:radiosity_matriz_inversa}
+Una de las formas de calcular la radiosidad es por medio del cálculo iterativo utilizando series de Neuman
+\cite{Stewart1998}, donde en la iteración $i$ se calcula el aporte del i-esimo rebote de la luz en la escena (y la
+serie en dicho paso los $i$ rebotes) \cite{Cohen1993}.
+El resultado de esta técnica es equivalente al obtenido mediante el cálculo de la matriz inversa de radiosidad 
+$\mathbf{M}=(\mathbf{I}-\mathbf{RF})^{-1}$ y permiten el cálculo de infinitos rebotes de luz como se
+describe en la Ecuación~\ref{ec-capEstadoDelArte:neumann_series}.
+\begin {align}
+\label{ec-capEstadoDelArte:neumann_series}
+B=\mathbf{M}E=(\mathbf{I}-\mathbf{RF})^{-1}E= (\underbrace{\mathbf{I} + \mathbf{RF}}_\text{Iluminación directa} + \underbrace{(\mathbf{RF})^2 + (\mathbf{RF})^3 + \ldots}_\text{Iluminación indirecta})E
+\end {align}
+La principal desventaja de resolver la serie de Neuman es que contiene una gran cantidad de multiplicaciones
+matriciales las cuales pueden resultar costosas, además de que el cálculo de infinitos rebotes requeriría
+del cálculo de infinitas iteraciones (en la práctica se detiene el cálculo en alguna iteración
+que resulte conveniente).
+Por lo tanto el cálculo de la matriz inversa de la radiosidad permite computar la radiosidad en un tiempo acotado
+de $O(n^{3})$.
+
+Esta tesis se basa en el cálculo de la matriz inversa de la radiosidad que es utilizada en cada paso de la búsqueda
+del óptimo para computar la radiosidad y así obtener la iluminación sobre la escena.
+%=================================================================
+\section{Problemas inversos de renderizado}\label{sec:problema_inverso_renderizado}
+
+La rama de estudio conocida como física teórica tiene como objetivo principal la comprensión del universo y sus 
+fenómenos, por medio de modelos matemáticos y conceptuales que intentan representar la realidad. Estos 
+fenómenos son modelados con la intención de encontrar lógica en los mismos y con el objetivo de predecirlos,
+es decir dada una descripción completa de un sistema físico (modelo utilizado como entrada), las teorías físicas
+nos permiten predecir qué resultados (salida) se obtendrá \cite{Tarantola2004}. En este sentido, las teorías 
+físicas describen un problema de forma directa. Se dice que un problema es directo cuando se intenta predecir la
+salida de un fenómeno físico a partir de las propiedades del modelo (utilizado para representar el entorno de
+dicho fenómeno) y su entrada.
+Los problemas inversos, en contraste a los problemas directos, son aquellos que intentan obtener una descripción
+de las propiedades de un entorno físico o ambiente (salida) a partir de los efectos medidos en el mismo
+(entrada).
+ 
+Existen teorías físicas que intentan describir todos los fenómenos conocidos por el hombre, estos
+problemas pueden ser de una amplia gama, yendo desde los más simples y ampliamente conocidos hasta los
+más complejos (como la expansión acelerada del universo) hasta el día de hoy no muy comprendidos.
+Si bien las teorías físicas son en muchos casos complejas, los problemas inversos agregan un grado mayor de 
+dificultad frente a los problemas directos, porque generalmente se posee una cantidad inmensa de soluciones 
+(incluso es posible que existan infinitas soluciones). Además, estos problemas suelen ser complejos del punto
+de vista númerico.
+
+Uno de los fenómenos físicos más estudiados por la computación gráfica es la creación de imágenes realistas, en
+especial las imágenes foto realistas \cite{Marschner1998}, y es un problema directo. Las imágenes foto
+realistas son aquellas que intentan simular imágenes tomadas por medio de cámaras fotográficas
+\cite{Jensen2001}. Para la generación de las mismas se deben tomar en cuenta los efectos y características
+físico-matemáticas de la luz por medio de algoritmos y cálculos complejos que intentan simular efectos como las
+texturas y sombras. Todo renderizado realista está basado, de una forma u otra, en la ecuación de rendering
+(ver Ecuación~\ref{ec-capEstadoDelArte:RendEq}), ecuación estudiada por Marschner~\cite{Marschner1998}
+para la resolución de problemas inversos.
+En dicho estudio Marschner identifica tres clases de problemas inversos de renderizado:
+\begin{itemize}
+\item problemas inversos de iluminación (ILP), son problemas relacionados con $\epsilon(x,x')$ (ver Ecuación~\ref{ec-capEstadoDelArte:RendEq}) donde se debe encontrar la emisión en una escena;
+\item problemas inversos de reflectometría, son problemas relacionados con $\rho(x,x',x'')$ donde se estudia la reflexión de las superficies;
+\item problemas inversos de geometría, son problemas relacionados con $g(x,x')$ donde se estudia la geometría de los objetos.
+\end{itemize}
+Si bien la teoría detrás de la luz y su interacción son conocidas, el cálculo eficiente de estos problemas inversos
+es un desafío importante.
+
+En esta tesis se plantean técnicas para la resolución eficiente de algunos tipos de problemas inversos de iluminación.
+%=================================================================
+\section{Problemas inversos de iluminación}\label{sec:problema_inverso_lum}
+Según Patow y Pueyo \cite{Patow2003}, se pueden clasificar los problemas inversos de iluminación de la
+siguiente forma:
+\begin{itemize}
+\item problemas de emitancia inversa, donde se desea encontrar las emisiones de un subconjunto de superficies;
+\item problemas de posicionamiento de la luz, donde se desea encontrar la posición de los emisores para lograr
+cierto conjunto de LI.
+\end{itemize}
+También es posible realizar una clasificación de los problemas inversos de iluminación en base a la
+ecuación de rendering. Con este planteamiento es posible identificar las siguientes clasificaciones:
+\begin{itemize}
+\item ajuste de la radiosidad clásica de elementos finitos, donde se considera un conjunto finito de fuentes
+luminosas con su iluminación descrita cierta función y describiendo la iluminación en la escena como la
+combinación lineal de estas funciones;
+\item esquema de Monte Carlo inverso, donde se disparan rayos desde superficies cuyas propiedades son
+conocidas a aquellas superficies con propiedades desconocidas obteniendo así información de las segundas a
+partir de las primeras;
+\item como un problema de iluminación local, donde se utiliza un método simple de iluminación local en lugar de
+utilizar uno global, y por lo tanto la ecuación de rendering no es utilizada.
+\end{itemize}
+Dadas las clasificaciones anteriores, esta tesis se centra en la resolución de problemas inversos de emisión y
+posicionamiento de la luz especialmente enfocado a las emisiones de luminarias. En la
+Figura~\ref{Fig:inv_problem} se puede ver una representación del ILP, donde se desea optimizar la
+configuración de luminarias, en concreto sus parámetros, que son inferidos a partir del conjunto de LI
+establecidas por el diseñador para las superficies seleccionadas.
+
+\begin{figure}[h]
+\begin{center}
+\includegraphics [width=0.89\textwidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/sart/inv_problem.pdf}
+\end{center}
+\caption{Figura que muestra un ejemplo de ILP. Las variables pueden ser la posición, emisión (la distribución de la intensidad luminosa) y orientación de cada luminaria en la configuración. Las LI son establecidas por el diseñador e incluyen objetivos y restricciones de optimización.} \label{Fig:inv_problem}
+\end{figure}
+
+En los problemas inversos de iluminación, el problema de resolver la emisión de una superficie dada la reflexión
+de esta es dado por la Ecuación~\ref{ec-capEstadoDelArte:reflection} (siempre y cuando las superficies sean
+lambertianas). Dicha ecuación puede ser obtenida directamente a partir de la Ecuación \ref{ec-capEstadoDelArte:radiosity}. 
+\begin {align}\label{ec-capEstadoDelArte:reflection}
+\mathbf{RF}E=(\mathbf{I}-\mathbf{RF})C
+\end {align}
+En esta ecuación, $E$ es la emisión que es una incógnita, $C$ es la radiosidad reflejada conocida de todas las
+superficies ($C=B-E$). Por lo antes dicho tenemos que $(\mathbf{I}-\mathbf{RF})C$ es un vector definido. 
+
+El cálculo de $E$ a través de la inversión de la matriz $\mathbf{RF}$, ya sea por medio de la descomposición
+truncada en valores singulares (o TSVD por sus siglas en inglés) o la MTSVD (TSVD modificada) \cite{Hansen1992},
+ofrece resultados limitados debido a dos problemas principales:
+\begin{itemize}
+\item los valores hallados de $E$ pueden ser negativos\cite{Contensin2002};
+\item es un problema ``mal planteado'' (de la palabra ``$ill-posed$'' en inglés).
+\end{itemize}
+Resultados negativos en emisiones no son soluciones posibles debido a que se estaría indicando que es posible
+emitir obscuridad, quitándole luz a otros parches.
+Por otro lado según Hadamard~\cite{Hadamard1902} los problemas ``bien planteados'' son aquellos que cumplen: 
+\begin{itemize}
+\item existe solución numérica;
+\item la solución numérica es única;
+\item la solución numérica depende continuamente de los datos (condiciones iniciales).
+\end{itemize} 
+Los problemas mal planteados son aquellos que no cumplen dichas condiciones.
+El hecho de que los ILP sean problemas mal planteados es consecuencia del bajo rango numérico de la matriz 
+$\mathbf{RF}$, lo que resulta en que cambios pequeños en la entrada $C$ implican cambios grandes en la 
+solución $E$ \cite{Ramamoorthi2001,Harutunian1995}.
+Sumado a lo anterior, los valores de $C$ son estimados, no se conocen sus valores exactos.
+
+Dados todos los problemas antes mencionados, los ILP son en general resueltos como problemas de
+optimización \cite{Contensin2002, Patow2003, Fernandez2014}, donde el objetivo es encontrar la
+mejor solución, la más cercana al objetivo planteado, o la que mejor cumple los objetivos y restricciones.
+%=================================================================
+\section{Optimización}\label{sec:optimizacion}
+La optimización matemática es el área que trata sobre la selección del mejor elemento (utilizando algún conjunto
+de criterios) dentro de un conjunto de elementos dado \cite{Dantzig2010}. El caso general consiste en maximizar
+o minimizar una función real, tomando sistemáticamente valores de entrada dentro del domino permitido y
+calculando su valor según la función dada. Los algoritmos de optimización son objeto de mucho estudio en las
+áreas de matemática y computación.
+La matemática provee los conceptos teóricos, mientras que la computación provee los medios para realizar una
+cantidad enorme de evaluaciones en poco tiempo. El modelado computacional se está convirtiendo en el tercer
+paradigma de las ciencias modernas, como predijo Ken Wilson~\cite{Koziel2011}.
+La demanda creciente de precisión y de complejidad en las estructuras y sistemas, hacen que el modelado y la
+simulación consuma cada vez más recursos computacionales (tiempo y memoria). Aun así, el diseño impulsado
+por la simulación se convierte en una obligación para un número creciente de áreas, generando la necesidad de
+metodologías de optimización sólidas y eficientes que produzcan diseños satisfactorios, incluso en presencia
+de objetivos analíticamente intratables y de recursos de cómputo limitados~\cite{Koziel2011}.
+
+Los problemas de optimización combinatoria son aquellos que consisten en la búsqueda de soluciones óptimas 
+dado un espacio de búsqueda finito \cite{Cook1998}. Dentro de esta existen los problemas de optimización,
+donde los candidatos son evaluados por una función objetivo (usualmente denominada función de aptitud o
+$fitness$) que indica qué tan cercana se encuentra la solución de alcanzar el conjunto de objetivos (y
+restricciones) que se imponen en la búsqueda, siendo la finalidad del problema encontrar la solución con el
+mejor valor retornado para la función objetivo \cite{Korte2007}. Estos problemas se caracterizan por poseer
+un espacio de búsqueda (que contiene potenciales soluciones al problema particular). Para la mayoría de este
+tipo de problemas, el espacio de búsqueda crece de manera exponencial en relación a las variables que este
+considere. La complejidad computacional de estos problemas se puede dividir en dos subclases, aquellos que
+pueden ser resueltas por una máquina de Turing determinística en tiempo polinómico (clase P) y por otro lado
+se tiene la clase que comprende aquellos problemas que pueden ser resueltos por una máquina de Turing no
+determinística en tiempo polinomial (clase NP) \cite{Garey1990}.
+
+La pregunta de si $NP\subseteq P$ o si $P=NP$ es uno de los problemas abiertos más prominentes en las ciencias de la
+computación (ver Figura \ref{fig-cap2:np_completo}). Dado que el mejor algoritmo conocido para resolver problemas
+NP-Difícil es de complejidad exponencial, si se aumenta el tamaño del problema este rápidamente se convierte en
+inviable para su resolución en tiempos razonables. Siempre es posible resolver una versión lo suficientemente
+pequeña (con dominio acotado o suficientes restricciones) por medio de algoritmos que utilicen fuerza bruta.
+También es posible agrandar el dominio de problemas NP de forma que resulte intratable para cualquier
+capacidad de cómputo dada.
+
+Si bien existen estrategias que intentan paliar la capacidad de cómputo contemporánea, como por ejemplo
+la computación distribuida \cite{MPISpec2009,White2009,Zaharia2010}, siempre existe un límite impuesto por los recursos
+disponibles en el momento dado.
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.35\textwidth]{./img/sart/np_completo.png}
+\caption{Diagrama con las distintas clasificaciones de complejidad de los problemas de optimización. La relación
+entre las clases P y NP es aún objeto de estudio.}
+\label{fig-cap2:np_completo}
+\end{figure}
+Sin embargo, en muchos problemas no es necesariamente un requerimiento encontrar el óptimo global o la
+mejor solución al problema, sino el encontrar una solución lo suficientemente buena y en un tiempo razonable.
+Esto sucede en la mayoría de los problemas de interés práctico. Es aquí donde surge la necesidad
+del uso de heurísticas. Una heurística es una técnica diseñada para resolver un problema de forma rápida,
+encontrando una solución aproximada \cite{Pearl1984}. Es importante destacar que por su naturaleza, cada
+heurística no siempre retorna la misma solución dado el mismo problema y entrada, ni garantiza encontrar la
+mejor solución a un problema, en contraposición a los métodos exactos que sí lo hacen.
+Por otro lado, una metaheurística es un procedimiento o heurística de alto nivel diseñado con el objetivo de encontrar,
+generar, seleccionar o guiar una heurística subordinada de forma inteligente \cite{Osman1996}.
+
+Según Blum y Roli \cite{Blum2003}, las metaheurísticas se caracterizan por:
+\begin{itemize}
+\item ser algoritmos aproximados y usualmente no deterministas;
+\item aplicar técnicas para evitar quedar atrapados en ciertas áreas del espacio de búsqueda (alrededor de óptimos locales);
+\item ser de aplicación general, i.e., no son especificas a un problema;
+\item usar conocimiento del dominio para optimizar la búsqueda.
+\end{itemize} 
+
+
+Existen distintos tipos de familias de modelos de optimización que son utilizadas en la literatura para formular y resolver
+problemas de toma de decisiones. Los modelos de optimización clásicos pueden ser divididos en las siguientes clases: 
+\begin{itemize}
+\item modelos de optimización combinatoria \cite{Papadimitriou1982};
+\item modelos no-analíticos \cite{Kargupta1997};
+\item modelos de programación matemática \cite{Atallah1999} (que son divididos en contiguos, enteros, mixtos, y también en lineales y no-lineales);
+\item modelos de satisfacción de restricciones \cite{Krzysztof2003}.
+\end{itemize} 
+Los modelos más exitosos están basados en programación matemática y restrictiva.
+
+Esta sección no pretende ser más que una introducción general a la optimización. Existen varios trabajos que presentan
+una introducción más profunda a los conceptos relacionados al estudio de la optimización, entre ellos se encuentran: 
+Garey y Johnson \cite{Garey1990}, Kalyanmoy \cite{Kalyanmoy2001} Coello et al. \cite{Coello2006}, Korte y Vygen 
+\cite{Korte2007}, Talbi \cite{Talbi2009} y Luenberger y Ye \cite{Luenberger2015}.
+%----------------------------------------------------------------------------------------------------------------------------------
+\subsection{Optimización en problemas inversos de iluminación}\label{subsec:opt_lumas}
+La optimización es también objeto de estudio en lo referente a la luz y es un proceso de suma importancia en los
+ILPs. Resolver un ILP significa colocar los emisores en una escena de forma de satisfacer un conjunto de LI. Este
+proceso fue propuesto como alternativa a resolver una ecuación lineal, que resulta mal planteada
+(\textit{ill-posed}) debido a las características de bajo rango de la matriz $\mathbf{RF}$ \cite{Fernandez2015}.
+En la literatura es posible encontrar muchos modelos y algoritmos que buscan resolver
+este problema de forma eficiente. Sin embargo no existe ningún método que se haya impuesto o destaque sobre
+los demás. En el trabajo de Patow y Pueyo \cite{Patow2003} se pueden encontrar los siguientes métodos como
+los más utilizados:
+\begin{itemize}
+\item recocido simulado ($simulated$ $annealing$) \cite{Kirkpatrick1983};
+\item descomposición en valores singulares truncada (MTSVD por su sigla en inglés) \cite{Hansen1992};
+\item mínimos cuadrados y mínimos cuadrados restrictivos \cite{Golub1996}.
+\end{itemize} 
+También existen trabajos que exploran la utilización de otras técnicas como \textit{hill climbing} \cite{Goldfeld1966} o 
+\textit{beam search} \cite{Russell2003}. Castro et al. \cite{Castro2009, Castro2012} realizó experimentos con
+una gran variedad de algoritmos.
+
+Al modelar el problema se construye un modelo matemático abstracto que usualmente implica realizar
+aproximaciones y, en algunos casos, quitar elementos debido a su complejidad matemática. Una vez que se
+tiene un modelo para el problema, el proceso de optimización es ejecutado. La solución hallada quizá no sirva
+en la realidad, por eso debe ser analizada en la práctica por el diseñador quien determinará si es una solución acaptable.
+
+Existen varios trabajos que proponen técnicas focalizadas en resolver el ILP. Schoeneman et al. \cite{Schoeneman1993}
+proponen una técnica que permite determinar la configuración de la iluminación en un ambiente, donde las fuentes
+luminosas tienen posiciones fijas, y se determinan los colores e intensidades de estas intentando acercarse lo máximo
+posible a lo que el diseñador pinta (de forma interactiva) en la escena.
+Otro interesante trabajo es el propuesto por Kawai et al. \cite{Kawai1993}. En este trabajo un conjunto de objetivos y 
+restricciones es establecido por el diseñador, y utilizado como entrada del proceso de optimización. Los autores
+consideran tanto luces difusas (descritas únicamente por su emisión) como direccionales (descritas por su posición, dirección y
+distribución luminosa). Las posiciones de las fuentes luminosas son fijas y no forman parte de la optimización,
+siendo variables del proceso de optimización la emisión (representadas como funciones cosenoidales, no con
+emisiones calculadas a partir de los datos de archivos fotométricos), las direcciones, la radiosidad y la
+reflectividad. La principal desventaja de los métodos anteriores es que resuelven el ILP considerando materiales
+difusos únicamente, ya que los algoritmos están basados en radiosidad. Por otro lado en el trabajo propuesto
+por Costa et al. \cite{Costa1999} también se intenta brindar herramientas de asistencia a los arquitectos y
+diseñadores de iluminación, al proveer otro método que resuelve el ILP. Los autores proponen una técnica que
+permite optimizar la geometría de la escena y los materiales utilizados, y optimizar los objetivos
+de iluminación establecidos por el diseñador, utilizando el programa \textit{Radiance} (Ward \cite{Ward1994})
+como método de iluminación global.
+Un trabajo inspirado en el trabajo de Schoeneman et al. \cite{Schoeneman1993} es el propuesto por Pellacini et al. 
+\cite{Pellacini2007}, donde es posible considerar más efectos, como sombras y reflexiones, además de optimizar las
+posiciones de las fuentes luminosas (las posiciones no son fijas o preestablecidas).
+
+El objetivo de esta tesis es el estudio e implementación de técnicas que permitan optimizar la ubicación,
+intensidad luminosa y orientación de luminarias de manera que satisfagan el conjunto de LIs propuestas por el
+diseñador dándole la posibilidad de utilizarlo como punto de partida en su diseño. Este es un problema de 
+optimización combinatoria, donde existe una configuración por cada combinación de los posibles valores de las
+variables consideradas.
+A su vez, la complejidad de la función objetivo que se analiza (radiosidad), y las restricciones aplicadas en la búsqueda,
+hacen que no sea posible encontrar un método sencillo de dirigir la búsqueda de manera inteligente. Es por esto que
+se evalúan dos técnicas para la búsqueda de soluciones óptimas: VNS y Algoritmos Evolutivos.
+%----------------------------------------------------------------------------------------------------------------------------------
+\subsection{Metaheurística Variable Neighbourhood Search}\label{subsec:vns}
+La metaheurística Variable Neighbourhood Search (VNS) es propuesta por Mladenovic y Hansen 
+\cite{Mladenovic1997}. Esta es una metaheurística que tiene como objetivo resolver problemas de optimización
+combinatoria y optimización global. La principal idea detrás del VNS es la sucesiva exploración de vecindarios
+(usualmente anidados), donde un conjunto finito y aleatorio de representantes es seleccionado con
+el fin de encontrar una solución que sea mejor a la mejor obtenida hasta el momento (en iteraciones previas).
+El VNS se basa en tres puntos \cite{Gendreau2010}:
+\begin{itemize}
+\item un óptimo local perteneciente a un vecindario no es necesariamente un mínimo de otro vecindario;
+\item un óptimo global es un óptimo local de todos los vecindarios posibles;
+\item en muchos problemas el óptimo local de cada vecindario es relativamente cercano al del resto de los vecindarios.
+\end{itemize}
+En cada vecindario se utiliza una búsqueda local para encontrar el óptimo local, generando distintos
+óptimos locales para cada vecindario y donde se tiene que el óptimo global es el óptimo local de alguno de los
+vecindarios \cite{Talbi2009}.
+Lo interesante de este método es que realiza una exploración sistemática pasando de vecindario en
+vecindario de forma de escapar de los óptimos locales, y por lo tanto aumentando las probabilidades de encontrar
+el óptimo global \cite{Talbi2009} (ver Figura \ref{fig:VNS_optima_search} y Algoritmo \ref{alg-cap2:VNS}).
+\begin{figure}[htb]
+\centering
+\includegraphics[width=.75\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/sart/VNS_optima_search.png}
+\caption{VNS metaheurística aplicada a dos vecindarios. El primer óptimo local es obtenido del primer vecindario, luego en el segundo vecindario se encuentra un nuevo óptimo local \cite{Talbi2009}.}
+\label{fig:VNS_optima_search}
+\end{figure}
+
+\begin{algorithm}
+  \caption{Algoritmo \texttt{VNS} (basado en pseudocódigo extraído de \cite{Brownlee2011}).}\label{alg-cap2:VNS}
+  \begin{algorithmic}[1]
+  \STATE \textbf{Input}: Vecindarios
+  \STATE \textbf{Output}: $Sol_{mejor}$
+  \STATE $Sol_{mejor}$ = solucionAleatoria()
+  \WHILE{$\neg$condicionDeParada()}
+  \FOR{$Vecindario_i$$\in$Vecindarios}
+  \STATE $Vecindario_{sol}$ = calcularVecindario($Sol_{mejor}$, $Vecindario_i$)
+  \STATE $Sol_{candidata}$ = obtenerCandidatoAleatorio($Vecindario_{sol}$)
+  \STATE $Sol_{candidata}$ = localSearch($Sol_{candidata}$)
+  \IF{(fitness($Sol_{candidata}$) $\leq$ fitness($Sol_{mejor}$))}
+  \STATE $Sol_{mejor}$ =$Sol_{candidata}$
+  \STATE \textbf{break}
+  \ENDIF
+  \ENDFOR
+  \ENDWHILE  
+  \STATE \textbf{Return} $Sol_{mejor}$
+  \end{algorithmic}
+\end{algorithm}
+% Pseudo de: http://www.cleveralgorithms.com/nature-inspired/stochastic/variable_neighborhood_search.html
+
+Otras metaheurísticas han sido creadas basándose en el VNS, como son las técnicas de VNDS~\cite{Hansen2001}
+(Variable Neighborhood Decomposition Search), SVNS~\cite{Mladenovic1997} (Skewed Variable Neighborhood
+Search), RVNS~\cite{Hansen2001} (Reduced Variable Neighborhood Search). Estas variantes no están
+relacionadas directamente con el cambio de vecindarios, concepto principal del VNS.
+En la técnica VNDS el problema de optimización se descompone en subproblemas, principalemente enfocado a
+problemas con cantidades grandes de instancias. Mientras que la técnica de SVNS se enfoca en cómo mejorar la
+salida de grandes valles~\cite{Talbi2009}. El RVNS elimina del algoritmo VNS original el paso de la búsqueda
+local, beneficiosa cuando se tiene una cantidad de instancias grandes donde el costo del cálculo de cada una es
+alto~\cite{Hansen2001}. 
+
+Lo simple e intuitivo de este método hace que sea un buen candidato para su modificación creando nuevas
+técnicas incluso híbridas, por ejemplo combinándola con Tabu Search. Esto hace que la técnica sea objeto de
+estudio constante, donde continuamente surgen nuevas variantes o combinaciones con otras
+metaheurísticas~\cite{Baar1999}.
+
+Un ejemplo de propuesta de utilización del método VNS para la búsqueda de soluciones óptimas en el contexto de 
+problemas ILP es el presentado por Fernández y Besuievsky~\cite{Fernadez2012}. En dicho estudio se introduce
+una técnica que reduce de forma significativa el tiempo de ejecución mediante la aplicación de distintos métodos. 
+La propuesta se basa en que un problema de optimización consiste en encontrar la mejor solución de todas las
+soluciones factibles, que se definen a través de un conjunto de restricciones. Para fines de iluminación, cada 
+restricción está relacionada con una intención de iluminación para la totalidad o parte de la escena.
+
+En esta tesis se estudia el uso de la metaheurística VNS para realizar la búsqueda de soluciones en ILPs.
+%----------------------------------------------------------------------------------------------------------------------------------
+\subsection{Algoritmos evolutivos}\label{subsec:alg_evo}
+Las técnicas de computación evolutiva conforman una familia de metaheurísticas estocásticas utilizadas para resolver
+variados problemas en las áreas de búsqueda y optimización combinatoria (entre otras). Estas basan su funcionamiento
+en mecanismos análogos a los establecidos por la teoría construida alrededor del estudio de la evolución natural de las
+especies biológicas. La evolución natural de las especies se puede ver como un proceso de optimización en sí mismo,
+donde el objetivo es la supervivencia de los individuos que interaccionan entre sí y con un entorno de recursos limitados
+(restricciones). Los algoritmos evolutivos intentan establecer una analogía con el proceso evolutivo biológico, la selección
+natural y la supervivencia del más apto.
+
+Los primeros trabajos en esta área fueron propuestos por Alan Turing en 1948 proponiendo implementar programas 
+automodificables capaces de jugar ajedrez y simular otras actividades inteligentes por medio de técnicas evolutivas.
+En las siguientes décadas se desarrollaron numerosas variantes de algoritmos evolutivos, que se diferencian entre sí
+por los modelos utilizados para realizar la evolución de sus poblaciones y por el tipo de operadores de evolución 
+utilizados. Los ejemplos más significativos de estudios y avances en este área son los realizados por 
+Goldberg \cite{Goldberg1989}, Back et al. \cite{Back1997} y Mitchel \cite{Mitchell1998}.
+
+Rechenberg \cite{Rechenberg1965} introduce por primera vez las estrategias de evolución. En su propuesta,
+el método de optimización consta de individuos compuestos por números reales y optimiza los parámetros
+en problemas de diseño en ingeniería. Esta propuesta sería desarrollada luego por Schwefel en los años 70.
+En su versión más simple se genera un descendiente por parte de un individuo padre. Esto es realizado por medio
+del operador de mutación. Este nuevo individuo reemplaza a su progenitor en la población. 
+
+Dos modelos avanzados de estrategias de evolución fueron formulados por Schwefel \cite{Schwefel1975}; 
+que se denominan $(\mu,\lambda)$ y $(\mu + \lambda)$. En ambas estrategias de evolución un conjunto de
+padres genera un conjunto de descendientes. 
+Estas estrategias se diferencian entre si por la forma en que estas reemplazan a sus progenitores, en modelos donde $m$
+padres generan $l$ descendientes. En el modelo $(\mu,\lambda)$ la selección se realiza solamente entre los descendientes,
+mientras que en el modelo $(\mu + \lambda)$ los padres y los descendientes compiten entre sí.
+
+En las siguientes décadas se realizaron propuestas de numerosas estrategias de evolución.
+El mecanismo evolutivo caracteriza a esta familia de métodos siendo el operador de mutación su base, sin embargo
+en propuestas más recientes se ha incorporado la recombinación como operador secundario \cite{Back1997}.
+
+Los algoritmos genéticos, introducidos por Holland \cite{Holland1975}, incluyen el uso de genomas y operadores de
+mutación, inversión y cruzamiento. Estas son las técnicas de computación evolutiva más difundidas en la actualidad y
+se basan fuertemente en una simulación de la evolución natural de los seres vivos, utilizando una población de
+soluciones potenciales que evoluciona en el correr de la ejecución por medio de interacciones y transformaciones.
+Los individuos de cada población se esfuerzan por sobrevivir emulando la selección del proceso evolutivo, proclive
+hacia los individuos más aptos de la población. Los sobrevivientes serán aquellos que formen parte de la siguiente
+generación. La aptitud de cada individuo es evaluada por medio de una función de fitness. En el proceso y luego de la
+generación de determinado número de generaciones, este mecanismo de seleccion lleva a la población a converger a
+una solución cercana al óptimo del problema.
+
+Lo anterior no es más que una introducción a los conceptos básicos y principales de los algoritmos evolutivos, pero
+existen trabajos que explican en mayor profundidad los conceptos detrás de la teoría, tales como
+Goldberg~\cite{Goldberg1989} y Spears~\cite{Spears2000}.
+
+En lo que respecta al uso de algoritmos genéticos en la resolución de ILPs, Elorza et al. \cite{Elorza1997} proponen
+un método que utiliza un pincel de luz. Este trabajo está basado en el trabajo de Schoeneman
+et al. \cite{Schoeneman1993}. Para el cálculo de la iluminación se utiliza un motor gráfico basado en radiosidad.
+Además de este trabajo, Ferentinos et al. \cite{Ferentinos2005} utiliza algoritmos genéticos para optimizar la
+iluminación en invernaderos, tomando en cuenta solamente la luz directa y optimizando el consumo de las luces
+utilizadas y la cantidad de luces utilizadas. Por otro lado, Delepoulle et al. \cite{Delepoulle2009} utiliza
+algoritmos genéticos para posicionar luces de forma óptima pero considerando la iluminación directa e
+indirecta y la posición de las mismas.
+
+En esta tesis se estudia el uso de algoritmos evolutivos basados en el modelo de evolución $(\mu,\lambda)$ como 
+método para realizar la búsqueda de posibles soluciones.
+%----------------------------------------------------------------------------------------------------------------------------------
+\subsection{Ejecución paralela}\label{subsec:parallel}
+La utilización de metaheurísticas que permitan su evaluación de forma paralela ayuda a reducir el tiempo total
+que toma realizar la búsqueda de soluciones \cite{Talbi2009}. Los objetivos que se buscan alcanzar cuando se 
+desea aplicar métodos de paralelismo son:
+\begin{itemize}
+\item Reducir los tiempos totales de ejecución
+\item Mejorar la robustez
+\item Mejorar el resultado obtenido en promedio por el algoritmo (calidad del resultado)
+\item Resolver problemas a mayor escala
+\end{itemize}
+Existen muchas formas de realizar la evaluación paralela. Las arquitecturas de computadores propuestas en la
+taxonomia de Flynn \cite{Flynn1972} plantean cuatro clasificaciones distintas que se basan en el número de flujos
+de instrucciones y datos concurrentes, que pueden ser utilizadas para reducir el tiempo necesario para realizar el
+cómputo si este es paralelizable.
+
+El VNS es una técnica que es fácilmente paralelizable, ya que la evaluación de cada individuo seleccionado en el
+vecindario es totalmente independiente de la evaluación del resto. La única excepción es que el algoritmo no sigue 
+seleccionando individuos al encontrar una candidato que evalúe mejor que la mejor solución hasta el momento (
+ver Algoritmo \ref{alg-cap2:VNS} línea 11). Además utilizando la matriz inversa de la radiosidad, para resolver el ILP 
+por medio de la Ecuación \ref{ec-capEstadoDelArte:neumann_series}, tenemos que es posible transformar el producto 
+matriz-vector $\mathbf{M}E$ en un producto matriz-matriz de la forma $\mathbf{ME}$ (donde $\mathbf{E}$ contiene
+cada uno de los $E$ de los individuos del vecindario a ser evaluados) la cual es optimizable por medio de
+optimizaciones existentes en las librerías de algebra lineal numérica.
+
+Un ejemplo de aplicación de estas técnicas para la mejora de los resultados obtenidos por el algoritmo VNS es el
+realizado por T. Davidovi\'c y T. Crainic \cite{Davidovic2013} donde proponen varias estrategias de paralelización,
+utilizando una arquitectura multiprocesador, logrando mejorar tanto la calidad de los resultados como los tiempos
+totales de ejecución de los algoritmos en comparación a un VNS sin técnicas de paralelización aplicadas.
+Otro ejemplo es el trabajo de Decia et al. \cite{Decia2017} cuyo principal el objetivo es el de mejorar los tiempos de
+ejecución de la  metaheurísticas VNS. En dicho trabajo se estudian optimizaciones, tanto en CPU como en GPU, que 
+aprovechan los algoritmos de multiplicación de bloques en matrices. Estas son aplicadas a la metaheurísticas VNS con el 
+objetivo de acelerar la búsqueda de soluciones en ILP. En dicho trabajo se reduce el tiempo necesario para realizar la
+evaluación del algoritmo VNS cuando el producto matriz-matriz es usado en lugar de realizar la multiplicación matriz-vector
+múltiples veces implementando tres tipos de variantes que juntan varias opeaciones en una única operación de 
+multiplicación matriz-matriz. El proceso de optimización toma ventaja del hecho de que realizar un producto matriz-matriz
+mejora los tiempos de ejecución debido a un mejor uso de la memoria cache del sistema pese a que realizar múltiples
+productos matriz-vector resulte en el mismo orden de operaciones \cite{Benner2013}.
+
+La optimización multimodal es el conjunto de técnicas enfocadas en la búsqueda de múltiples óptimos
+globales y locales en oposición a la búsqueda de un único óptimo global. Su motivación se basa en que el conocimiento
+de varios óptimos permite el cambio entre los mismos, en caso de ser necesario, logrando mantener la performance
+general del sistema. Esto resulta de utilidad cuando el costo o restricciones de obtener el óptimo global lo hacen
+inviable. La aplicación de técnicas de algoritmos evolutivos es capaz de obtener múltiples soluciones mediante la
+simulación de una población en oposición a los métodos convencionales que requieren de reiniciar la búsqueda o
+realizar múltiples ejecuciones. Múltiples técnicas de optimización evolutiva, conocidas como técnicas de "\textit{niching}"
+(técnicas de nicho), han sido desarrolladas en las últimas décadas para la localización de óptimos locales y globales. 
+Dichas técnicas pueden ser incorporadas a algoritmos evolutivos para lograr mantener múltiples subpoblaciones dentro
+de una población objetivo, logrando así localizar múltiples óptimos globales o locales de manera simultánea.
+Para lograr realizar la búsqueda multimodal de soluciones las técnicas de \textit{niching} conducen la búsqueda a distintas
+áreas en el espacio de búsqueda con el objetivo de que estas converjan a distintos picos simultáneamente, logrando 
+de esta manera mantener diversas subpoblaciones dentro de la población general \cite{Das2011}. Las técnicas
+de \textit{niching} pueden ser identificadas según las siguientes cuatro categorías:
+\begin{enumerate}
+\item Secuencial: aquellos que localizan los nichos de manera iterativa
+\item Paralelo: aquellos métodos que localizan todos los nichos de forma paralela
+\item Cuasi secuencial: aquellos que localizan los nichos de manera secuencial y realizan la búsqueda de nuevos nichos de forma paralela mientras que los actuales son mantenidos
+\item Jerárquico: es una versión hibrida entre las técnicas secuencial y paralela diseñada para sobreponer las limitantes de la primera
+\end{enumerate}
+La técnica de \textit{clearing}, introducida por Petrowski \cite{Petrowski1996}, se basa en el concepto de la competencia
+por la obtención de recursos limitados de un entorno por una subpoblación dada, eliminando así dentro de cada
+nicho los individuos menos aptos y manteniendo la diversidad.
+
+En esta tesis se estudian técnicas de ejecución paralela con el objetivo de mejorar las soluciones obtenidas y de
+obtener mejores tiempos de ejecución, enfocadas principalmente a aprovechar la multiplicación matriz-matriz
+resultante de agrupar varios vectores de emisión $E$ en una matriz de emisiones $\mathbf{E}$.
+%=================================================================
+\section{Fotometría}\label{sec:fotometria}
+El objetivo de la fotometría es medir la luz tomando en cuenta el sistema visual humano. Mientras que la
+radiometría se encarga de medir la luz en todas las regiones espectrales, incluyendo los espectros infrarrojo y
+ultravioleta, la fotometría solo mide en la región espectral visible por el ojo humano (que está entorno de 360nm
+a 830nm). 
+Por esto, la fotometría es la ciencia esencial para la evaluación de fuentes de luz y objetos utilizados para la iluminación,
+señalización, pantallas, y otras aplicaciones donde la luz está destinada a ser vista por los seres humanos.
+En esta tesis es de importancia el estudio de la forma en que las luminarias emiten luz en su entorno, siendo los 
+archivos fotométricos los contenedores de la información de la emisión de la luz de cada luminaria.
+%----------------------------------------------------------------------------------------------------------------------------------
+\subsection{Archivos fotométricos}\label{subsec:archivos_fotometricos}
+Los archivos fotométricos son archivos, definidos en texto plano, que contienen las características fotométricas
+de una luminaria \cite{iesna1995iesna}. Los diagramas fotométricos polares o curvas polares, son la forma estándar de visualizar la 
+distribución de luz de un archivo fotométrico.
+Estas características son el flujo luminoso, cuánta luz genera, la distribución de intensidad luminosa, en qué
+dirección emite luz y con qué intensidad y la potencia consumida.
+El flujo luminoso total es la cantidad de luz que es emitida por una fuente de luz en el espectro perceptible por el ojo
+humano y es medida en lúmenes (lm). La intensidad luminosa es la cantidad de lúmenes que es emitida en una dirección dada,
+por la luminaria, por ángulo sólido, y es medida en candelas (cd), equivalente a lúmenes por estereorradián.
+Un archivo fotométrico contiene la intensidad luminosa para un conjunto discreto de direcciones.
+Una de las principales instituciones encargadas de establecer el estándar para el formato de los archivos fotométricos
+es Illuminating Engineering Society of North America la cual define el formato LM-63-02 IESNA \cite{iesna1995iesna}
+que es el estándar utilizado en Norte América. Existe también el formato EULUMDAT estándar en Europa. Esta tesis
+utiliza el formato LM-63-02 IESNA ya que existe software libre que permite la transformación del formato EULUMDAT 
+a este \cite{helios}.
+El objetivo principal de estos archivos es proveer la información de las luminarias a profesionales dedicados al
+diseño de la iluminación, existiendo herramientas como Dialux \cite{dialux} que leen dichos archivos y proveen,
+en su software, herramientas útiles para la medición y diseño de la iluminación.
+
+En la actualidad cada fabricante de luminarias provee una base de datos de archivos fotométricos que contiene
+la información fotométrica de las luminarias que fabrica. Las bases de datos utilizadas en los experimentos teóricos en
+esta tesis fueron descargadas de los fabricantes: Philips \cite{philips} y Cree \cite{cree} de los cuales se utilizan las bases de datos
+enteras sin pre-procesar. En la Figura 
+\ref{fig-cap2:polarCurves} se pueden ver tres ejemplos de curvas polares y en la Figura \ref{fig-cap2:polarCurvesExplanation}
+una representación en tres dimensiones de una curva polar. Las curvas polares son la representación gráfica de la
+intensidad luminosa de la luminaria.
+
+En esta tesis los archivos fotométricos son utilizados para extraer la información (la intensidad luminosa entre otros datos)
+que es necesaria para realizar el cálculo de la emisión de luz de cada luminaria en la escena, y que es luego utilizada
+como la emisión en el método de radiosidad. Los datos de los archivos fotométricos son previamente transformados
+para representar el flujo luminoso que es recibido en cada parche de la escena.
+
+\begin{figure}[!h]
+\begin{center}
+\subfigure{
+\includegraphics[scale=0.22]{./img/sart/polar_curve_1.png}
+}\subfigure{
+\includegraphics[scale=0.22]{./img/sart/polar_curve_2.png}
+}\subfigure{
+\includegraphics[scale=0.22]{./img/sart/polar_curve_3.png}
+}
+\end{center}
+\caption{Ejemplos de curvas polares que representan gráficamente la intensidad luminosa de tres luminarias distintas. Las curvas polares muestran la intensidad luminosa en los planos construidos por los planos: C0 más C180 y C90 más C270.}
+\label{fig-cap2:polarCurves}
+\end{figure}
+
+\begin{figure}[!h]
+\begin{center}
+\includegraphics[scale=0.45, trim={3.5cm 3.5cm 3.5cm 3.5cm}]{./img/sart/polarCurveExplanation.png}
+\end{center}
+\caption{Representación en tres dimensiones de una curva polar. Como se puede notar la información de los planos C0 y C180 se junta para formar un único plano que contiene la distribución de la intensidad luminosa en cada dirección del nuevo plano. Lo mismo sucede para los planos C90 y C270. Los archivos fotométricos contienen la información necesaria para construir un conjunto discreto de planos que en conjunto tienen la información, discretizada, de la emisión de la luminaria.}
+\label{fig-cap2:polarCurvesExplanation}
+\end{figure}
+%----------------------------------------------------------------------------------------------------------------------------------
+\subsection{Optimización de configuraciones de luminarias}\label{subsec:opt_lumas}
+Varias técnicas han sido desarrolladas con el objetivo de optimizar la posición de las luminarias en una escena,
+con el objetivo de alcanzar cierto conjunto de LIs. Shariful et al. \cite{Shariful2010} formulan un método para
+posicionar dos luminarias fijas en dos conjuntos de posiciones disjuntos. Los archivos fotométricos que utilizan
+para cada luminaria son previamente seleccionados, y fijos, y utilizados como entrada para el cálculo de la
+iluminación resultante. Otro método, que utiliza un acercamiento diferente, es propuesto por Uygun et al. \cite{Uygun2015},
+donde optimizan las posiciones de las luminarias también considerando la información fotométrica de las mismas.
+En el trabajo de Schwarz y Wonka \cite{Schwarz2014} un interesante método es presentado para el diseño de 
+la iluminación de exteriores de edificios, donde optimizan la posición y la rotación tomando en cuenta también la
+información fotométrica de las luminarias utilizadas, pero consideran únicamente la iluminación directa (principal
+componente de iluminación) y solo un número reducido de tipos de luminarias es considerado.
+
+En esta tesis las técnicas propuestas resuelven el ILP calculando la propagación de la luz en la escena, que es emitida
+por las luminarias posicionadas en esta, usando el método de radiosidad. La emisión de las luminarias es simulada utilizando la
+información de archivos fotométricos. Las técnicas propuestas están parcialmente
+basadas en el trabajo realizado por Fernández y Besuievsky \cite{Fernadez2012}, donde el método LRR es utilizado
+para resolver el ILP.
+%%% end of chapter

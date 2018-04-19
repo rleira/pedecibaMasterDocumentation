@@ -1,0 +1,16 @@
+\newcommand{\theoremname}{Theorem}
+\newcommand{\lemmaname}{Lemma}
+\newcommand{\corollaryname}{Corollary}
+\newcommand{\propositionname}{Proposition}
+\newcommand{\conjecturename}{Conjecture}
+\newcommand{\definitionname}{Definition}
+\newcommand{\examplename}{Example}
+\newcommand{\problemname}{Problem}
+\newcommand{\exercisename}{Exercise}
+\newcommand{\notationname}{Notation}
+%\newcommand{\algorithmname}{Algorithm}
+\newcommand{\notename}{Note}
+\newcommand{\acknowledgmentname}{Acknowledgment}
+\newcommand{\remarkname}{Remark}
+\newcommand{\claimname}{Claim}
+\newcommand{\solutionname}{Solution}

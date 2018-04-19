@@ -1,0 +1,1194 @@
+%!TeX encoding = ISO-8859-1
+\chapter{Análisis experimental}\label{capAnalisisExperimental}
+Esta sección presenta los experimentos realizados para evaluar las técnicas implementadas y los resultados
+obtenidos en estos.
+%=================================================================
+\section{Introducción}
+Los experimentos realizados en esta tesis buscan analizar el cumplimiento de estándares de iluminación, considerando
+objetivos y restricciones realistas en el ámbito del diseño de iluminación. El primer experimento de la sección analiza la
+convergencia del método (Sección~\ref{sec-analisisExperimental:convergencia}), luego se analiza la optimización de
+configuraciones con el objetivo de mejorar su eficiencia en consumo eléctrico (Sección~\ref{sec-analisisExperimental:eficienciaElectrica}).
+A continuación se presenta un experimento que busca maximizar la cantidad de luz recibida en una superficie dada (Sección~\ref{sec-analisisExperimental:maximizadoIluminacion}),
+para luego evaluar con un nuevo experimento la búsqueda de uniformidad en la luz recibida en una superficie 
+(Sección~\ref{sec-analisisExperimental:uniformidad}).
+Luego se estudia la aplicación de técnicas de evaluación paralela de configuraciones con el objetivo de mejorar
+la eficiencia computacional del algoritmo (Sección~\ref{sec-analisisExperimental:evaluacionParalela}) y,
+con otro experimento diferente, qué tan efectivo es el algoritmo de ordenado (Sección~\ref{sec-analisisExperimental:algoritmoOrdenado}).
+Luego se realizan dos experimentos para evaluar la performance del algoritmo (Sección~\ref{sec-analisisExperimental:desComputacional}), donde se estudia el efecto que tiene el aumento de la cantidad de 
+luminarias que pueden ser utilizadas en la optimización (Sección~\ref{sec-analisisExperimental:cantidadLuminarias}),
+y por último cuánto afecta el tamaño del hemi-cubo al cálculo
+del pre-cómputo (Sección~\ref{sec-analisisExperimental:tamhemi-cubo}).
+En la Sección~\ref{sec-analisisExperimental:algoritmoEvolutivo} se comparan las implementaciones del VNS y el
+algoritmo evolutivo para determinar cuál retorna los mejores resultados. 
+Por último (Sección~\ref{sec-analisisExperimental:poderJ}) se analiza la aplicación del algoritmo VNS en dos casos
+reales, donde se optimiza la configuración de luminarias en el edificio Palacio de los Tribunales (Poder Judicial). 
+
+Las tablas que se presentan en cada experimento muestran los resultados de aplicar las optimizaciones con y sin 
+rotaciones, indicando con $\neg Rot$ cuando no se aplican rotaciones y $Rot$ cuando sí son aplicadas. 
+Las columnas $peor$ y $mejor$ contienen los resultados de las instancias de las pruebas de optimización que
+retornaron los peores y mejores resultados respectivamente.
+Todas las instancias de todos los experimentos fueron ejecutadas 20 veces usando una base de datos 
+que contiene 1517 luminarias (1516 luminarias más la luminaria vacía) para los experimentos teóricos y
+734 (incluida la luminaria vacía) en el caso de estudio del edificio del Palacio de los Tribunales
+(Sección~\ref{sec-analisisExperimental:poderJ}).
+Las posibles rotaciones son determinadas por los ángulos z1 $\in$ [0, 45, 90, 135, 180, 225, 270, 315], 
+y2 $\in$ [0, 45, 90, 135], z3 $\in$ [0, 90, 180, 270] lo que resulta en 128 rotaciones. Esta simplificación es debida
+a que en la práctica no se utilizan rotaciones de a grados, y el algoritmo puede ejecutar y converger de mejor manera
+si se considera un conjunto de rotaciones simple y reducido.
+
+Cuando se utiliza la escena del patio (Figura~\ref{cap-exp:fig:patio_ghost}) es posible ubicar las luminarias 
+en 49 posiciones distintas (distribuidas en el techo de la escena), mientras que en la escena con forma de ocho
+(Figura~\ref{cap-exp:fig:eight_ghost}) la cantidad de posiciones es 100 (también distribuidas en el techo).
+
+\begin{figure*}[!ht]
+\centering
+\begin{subfigure}[]
+{\includegraphics[width=0.38\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/experimentos/patioGhost}\label{cap-exp:fig:patio_ghost}}
+\end{subfigure}
+\begin{subfigure}[]
+{\includegraphics[width=0.38\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/experimentos/eightGhost}\label{cap-exp:fig:eight_ghost}}
+\end{subfigure}
+
+\begin{subfigure}[]
+{\includegraphics[width=0.38\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/experimentos/target_patio_floor}\label{cap-exp:fig:patio_targets}}
+\end{subfigure}
+\begin{subfigure}[]
+{\includegraphics[width=0.38\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/experimentos/target_eight}\label{cap-exp:fig:eight_targets}}
+\end{subfigure}
+
+\begin{subfigure}[]
+{\includegraphics[width=0.38\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/experimentos/patio}\label{cap-exp:fig:patio}}
+\end{subfigure}
+\begin{subfigure}[]
+{\includegraphics[width=0.38\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/experimentos/number8}\label{cap-exp:fig:eight}}
+\end{subfigure}
+\mbox{}
+\caption{\label{cap-exp:fig:scenes}Escenas utilizadas en los experimentos teóricos. La primera columna muestra la escena del Patio, compuesta por 21824 parches. La segunda columna muestra la escena con forma de ocho, que consiste de 9088 parches. Las posibles posiciones donde se pueden ubicar las luminarias están coloreadas en amarillo, mientras que las superficies objetivo lo están en rojo (ver \subref{cap-exp:fig:patio_targets} y \subref{cap-exp:fig:eight_targets}). En \subref{cap-exp:fig:patio} y \subref{cap-exp:fig:eight} se muestran los resultados del experimento de la búsqueda de uniformidad (Sección.~\ref{sec-analisisExperimental:uniformidad}), renderizado por medio de Dialux.}
+\end{figure*}
+
+Todas las simulaciones fueron realizadas en un PC configurado con un procesador Intel i7 processor (3.4 GHz)
+de cuatro núcleos y 16 Gbytes de RAM.
+%=================================================================
+\section{Convergencia}
+\label{sec-analisisExperimental:convergencia}
+
+El propósito de este experimento es comprobar la capacidad del algoritmo para converger a una solución previamente
+definida.
+Para realizar este experimento se toma como objetivo de optimización una radiosidad dada ${B}_{Obj}$,
+que es obtenida mediante el cálculo de una de las configuraciones de emisión posibles (definida por
+luminarias, ubicaciones y orientaciones). La función objetivo es aquella que minimiza la distancia entre la
+radiosidad generada para la configuración que está siendo evaluada ($B$) y dicho ${B}_{Obj}$.
+Esto se puede formular como sigue:
+
+\begin{equation}
+\label{cap-exp:eq:exp1minimization}
+\min: \lVert B - B_{Obj} \rVert_2
+\end{equation}
+
+Los resultados de este experimento se pueden ver en la Tabla~\ref{cap-exp:tab:convergence}. La primera columna
+muestra el número de luminarias utilizadas en las instancias de optimización, luego se muestra la cantidad de veces
+que se encontró la solución exacta ${B}_{Obj}$, seguido por el número medio de iteraciones calculado a partir de la
+cantidad de iteraciones que tomó encontrar dicha solución o el máximo número de iteraciones realizadas
+(en caso de que el algoritmo no haya encontrado la solución exacta). Por último, las tres columnas restantes muestran
+la media de la distancia obtenida para la solución con respecto al objetivo, su error máximo (relativo), y la
+dimensión del dominio que es tomado en cuenta en la optimización, respectivamente.
+El máximo número de iteraciones permitido para este experimento es 100000, y la escena utilizada es el Patio (Fig.~\ref{cap-exp:fig:patio_ghost}).
+
+\begin{table}[!htbp]
+%\footnotesize
+\caption{Resultados de la optimización con el objetivo de minimizar la distancia a una configuracion determinada.}
+\label{cap-exp:tab:convergence}
+\centering
+\begin{threeparttable}
+\begin{tabular}{|c|c|c|c|c|c|}
+\hline
+\multicolumn{1}{|c|}{{\# lum}} &
+\multicolumn{1}{c|}{\# exactas} &
+\multicolumn{1}{c|}{$\mu (\# it)$} &
+\multicolumn{1}{c|}{$\mu \Big(\frac{\lVert B - B_T \rVert_2}{\lVert B_T \rVert_2}\Big)$} &
+\multicolumn{1}{c|}{$ \max\Big(\frac{\lVert B - B_T \rVert_2}{\lVert B_T \rVert_2}$\Big)} &
+\multicolumn{1}{c|}{dominio} \\ \hline
+1 & 20 & 6617 & 0 & 0 & $9,5\times10^{6}$\\ \hline
+2 & 1 & 91210 & 1,1$\times$$10^{-1}$ & 2,3$\times$$10^{-1}$ & $9,0\times10^{13}$\\ \hline
+3 & 0 & 100000 & 1,2$\times$$10^{-1}$ & 2,9$\times$$10^{-1}$ & $8,6\times10^{20}$\\ \hline
+\end{tabular}
+\end{threeparttable}
+\end{table}
+%
+
+Los resultados muestran que el algoritmo converge de buena forma cuando se consideran configuraciones con una
+única luminaria, retornando la solución exacta en todas las ejecuciones (realizando un promedio de 6617 iteraciones).
+Para dos luminarias, el dominio es casi $10^{7}$ veces más grande, sin embargo el algoritmo es capaz de encontrar 
+la solución exacta en 1 de las 20 instancias ejecutadas, y con errores relativos pequeños (las soluciones obtenidas
+no están alejadas de la solución objetivo) con la misma cantidad de iteraciones máxima. Configuraciones con mayor
+número de luminarias configuradas requerirán de un mayor número de iteraciones si se desea encontrar la solución
+exacta, debido al crecimiento exponencial del dominio de búsqueda.
+De todas formas la media y peor caso se mantienen acotados.
+
+La Figura~\ref{cap-exp:fig:convergence_example} muestra la evolución de las variables en la configuración para el
+experimento que considera una luminaria en la configuración.
+
+% \begin{figure*}[!ht]
+% \centering
+% \begin{subfigure}
+% {\includegraphics[width=0.30\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/experimentos/it1_B}\label{cap-exp:fig:convergence_it1_B}}
+% \end{subfigure}
+% \begin{subfigure}
+% {\includegraphics[width=0.32\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/experimentos/it1_Lum}\label{cap-exp:fig:convergence_it1_Lum}}
+% \end{subfigure}
+% \begin{subfigure}
+% {\includegraphics[width=0.33\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/experimentos/it1_patch}\label{cap-exp:fig:convergence_it1_pos}}
+% \end{subfigure}
+
+% \begin{subfigure}
+% {\includegraphics[width=0.30\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/experimentos/it157_B}\label{cap-exp:fig:convergence_it157_B}}
+% \end{subfigure}
+% \begin{subfigure}
+% {\includegraphics[width=0.32\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/experimentos/it157_Lum}\label{cap-exp:fig:convergence_it157_Lum}}
+% \end{subfigure}
+% \begin{subfigure}
+% {\includegraphics[width=0.33\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/experimentos/it1_patch}\label{cap-exp:fig:convergence_it157_pos}}
+% \end{subfigure}
+
+% \begin{subfigure}
+% {\includegraphics[width=0.30\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/experimentos/it401_B}\label{cap-exp:fig:convergence_it401_B}}
+% \end{subfigure}
+% \begin{subfigure}
+% {\includegraphics[width=0.32\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/experimentos/it401_Lum}\label{cap-exp:fig:convergence_it401_Lum}}
+% \end{subfigure}
+% \begin{subfigure}
+% {\includegraphics[width=0.33\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/experimentos/it516_patch}\label{cap-exp:fig:convergence_it401_pos}}
+% \end{subfigure}
+
+% 
+% \begin{subfigure}
+% {\includegraphics[width=0.30\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/experimentos/it512_B}\label{cap-% exp:fig:convergence_it512_B}}
+% \end{subfigure}
+% \begin{subfigure}
+% {\includegraphics[width=0.32\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/experimentos/it512_Lum}\label{cap-exp:fig:convergence_it512_Lum}}
+% \end{subfigure}
+% \begin{subfigure}
+% {\includegraphics[width=0.33\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/experimentos/it516_patch}\label{cap-exp:fig:convergence_it512_pos}}
+% \end{subfigure}
+% 
+
+% \begin{subfigure}
+% {\includegraphics[width=0.30\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/experimentos/it516_B}\label{cap-exp:fig:convergence_it516_B}}
+% \end{subfigure}
+% \begin{subfigure}
+% {\includegraphics[width=0.32\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/experimentos/it516_Lum}\label{cap-exp:fig:convergence_it516_Lum}}
+% \end{subfigure}
+% \begin{subfigure}
+% {\includegraphics[width=0.33\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/experimentos/it516_patch}\label{cap-exp:fig:convergence_it516_pos}}
+% \end{subfigure}
+% \mbox{}
+% \caption{\label{cap-exp:fig:convergence_example}Cada columna representa el estado de las variables en un paso de la optimización (de arriba hacia abajo) para una ejecución que encontró el óptimo $B_{Obj}$. La primer columna muestra la iluminación en la escena con código de colores que indican la diferencia entre $B(E)$ y $B_{Obj}$, verde indica que $B(E)>B_{Obj}$, rojo indica que $B(E)<B_{Obj}$, y en otro caso el color original es utilizado (escala de grises). Luego en la segunda columna se muestra la curva polar de la luminaria y por último, en la tercera columna, la posición de la luminaria (el parche en que se ubicó, marcado en blanco). La primer fila muestra la configuración para la iteración inicial (que es seleccionada de forma aleatoria), y para la cual se tiene la luminaria rotada en los ángulos $z_1$=180, $y_2$=90 y $z_3$=270. La segunda fila muestra la configuración para la iteración número 157, rotada según $z_1$=180, $y_2$=90 y $z_3$=270. La tercer fila para la iteración número 401, rotada según $z_1$=180, $y_2$=135 y $z_3$=270. Y por último la cuarta fila para la última iteración (516), rotada según $z_1$=0, $y_2$=180 y $z_3$=90.}
+% \end{figure*}
+
+
+\begin{figure*}[!ht]
+\centering
+\begin{subfigure}
+{\includegraphics[width=0.23\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/experimentos/it1_B}\label{cap-exp:fig:convergence_it1_B}}
+\end{subfigure}
+\begin{subfigure}
+{\includegraphics[width=0.23\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/experimentos/it157_B}\label{cap-exp:fig:convergence_it157_B}}
+\end{subfigure}
+\begin{subfigure}
+{\includegraphics[width=0.23\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/experimentos/it401_B}\label{cap-exp:fig:convergence_it401_B}}
+\end{subfigure} 
+\begin{subfigure}
+{\includegraphics[width=0.23\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/experimentos/it516_B}\label{cap-exp:fig:convergence_it516_B}}
+\end{subfigure}
+\hfill
+
+\addtocounter{subfigure}{-4}
+\begin{subfigure}[\# 1]
+{\includegraphics[width=0.233\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/experimentos/it1_Lum}\label{cap-exp:fig:convergence_it1_Lum}}
+\end{subfigure}
+\begin{subfigure}[\# 157]
+{\includegraphics[width=0.233\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/experimentos/it157_Lum}\label{cap-exp:fig:convergence_it157_Lum}}
+\end{subfigure}
+\begin{subfigure}[\# 401]
+{\includegraphics[width=0.233\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/experimentos/it401_Lum}\label{cap-exp:fig:convergence_it401_Lum}}
+\end{subfigure}
+\begin{subfigure}[\# 516]
+{\includegraphics[width=0.233\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/experimentos/it516_Lum}\label{cap-exp:fig:convergence_it516_Lum}}
+\end{subfigure}
+\hfill
+\mbox{}
+\caption{\label{cap-exp:fig:convergence_example}Cada columna representa el estado de las variables en un paso de la optimización (de izquierda a derecha) para una ejecución que encontró el óptimo $B_{Obj}$. La primer fila muestra la iluminación en la escena con código de colores que indican la diferencia entre $B$ y $B_{Obj}$, verde indica que $B>B_{Obj}$, rojo indica que $B<B_{Obj}$, y en otro caso el color original es utilizado (escala de grises). Luego en la segunda fila se muestra la curva polar de la luminaria seleccionada en el paso. La primera columna (de izquierda a derecha) muestra la configuración para la iteración inicial (que es seleccionada de forma aleatoria), y para la cual se tiene la luminaria rotada en los ángulos $z_1$=180, $y_2$=90 y $z_3$=270. La segunda columna muestra la configuración para la iteración número 157, rotada según $z_1$=180, $y_2$=90 y $z_3$=270. La tercer columna para la iteración número 401, rotada según $z_1$=180, $y_2$=135 y $z_3$=270. Y por último la cuarta columna para la última iteración (516), rotada según $z_1$=0, $y_2$=180 y $z_3$=90 donde se encontró la solución exacta.}
+\end{figure*}
+
+Es importante destacar que el tamaño del dominio de búsqueda depende directamente de las variables consideradas
+en la optimización y los valores que estas pueden tomar. El número de configuraciones posibles para una luminaria
+dada se determina como el número de luminarias que se consideran en la base de datos, multiplicado por la cantidad
+de posiciones en la que se puede ubicar una luminaria, multiplicado por la cantidad de rotaciones consideradas.
+Cuando hay múltiples luminarias el número anterior se lo eleva a la cantidad de luminarias consideradas en la
+configuración. La columna llamada dominio en la Tabla~\ref{cap-exp:tab:convergence} muestra los diferentes tamaños
+de dominios de búsqueda para la escena del Patio.
+%=================================================================
+\section{Eficiencia en consumo eléctrico}
+\label{sec-analisisExperimental:eficienciaElectrica}
+El objetivo de este experimento es minimizar el consumo eléctrico de la configuración sujeto a que las
+iluminancias se encuentren acotadas entre 2 valores preestablecidos. El problema se puede expresar
+matemáticamente como sigue:
+
+\begin{align}
+\label{cap-exp:eq:minimization}
+\min{\sum_{i=1}^{n}P_{i}} \hspace{0.2cm}, \hspace{0.2cm} i \in 1..n \hspace{0.2cm},\hspace{0.2cm} 
+s.t.:
+\begin{cases}
+min(I) \geq 50\textrm{lx} \\
+max(I) \leq 250\textrm{lx} 
+\end{cases}
+\end{align}
+
+donde $n$ es la cantidad de luminarias que se utilizan en la configuración, $P_{i}$ es la potencia (medida en watts)
+consumida por la luminaria $i$-ésima. $I$ es el vector que contiene los valores de iluminancia para cada parche en
+la superficie objetivo.
+
+En este experimento la superficie objetivo es una de las paredes en el segundo piso de la escena del Patio 
+(Figura~\ref{cap-exp:fig:patio_ghost}) y el máximo número de iteraciones permitido es de 25000. 
+
+La Tabla~\ref{cap-exp:tab:power_efficiency} presenta los resultados de este experimento. En la columna $mejor$
+se destaca que orientar las luminarias retorna mejores resultados. Sin embargo la columna donde se encuentra
+la media y desviación estándar ($\mu \pm \sigma$) muestra que mejores resultados pueden ser conseguidos si no
+se utilizan rotaciones, al menos luego de 25000 iteraciones.
+Esto es debido al tamaño del dominio de búsqueda ($8,6\times10^{20}$ configuraciones), que hace
+necesaria la realización de una mayor cantidad de iteraciones para encontrar buenas configuraciones. De todas
+formas, las soluciones obtenidas son similares a las obtenidas sin rotaciones.
+
+En la Tabla~\ref{cap-exp:tab:power_efficiency}, la fila para $\#lum=1$ no es presentada ya que no existen
+soluciones al problema definido en la Ecuación~\ref{cap-exp:eq:minimization}
+
+\begin{table}[!htbp]
+%\footnotesize
+\caption{Resultados de la optimización para el experimento de eficiencia eléctrica. El objetivo es minimizar la cantidad de potencia eléctrica consumida por las luminarias en la configuración pero restringido a conseguir un rango mínimo y máximo de iluminancia en la superficie objetivo.}
+\label{cap-exp:tab:power_efficiency}
+\centering
+\begin{tabular}{cccccccc}\cline{1-8}
+\multicolumn{2}{|c}{\multirow{2}{*}{\#lum}} & \multicolumn{2}{||c}{mejor (W)} & \multicolumn{2}{||c}{peor (W)} & \multicolumn{2}{||c|}{$\mu \pm \sigma$ (W)} \\ \cline{3-8}
+\multicolumn{2}{|c}{} & \multicolumn{1}{||c}{$\neg Rot$} & \multicolumn{1}{|c}{$Rot$} & \multicolumn{1}{||c}{$\neg Rot$} & \multicolumn{1}{|c}{$Rot$} & \multicolumn{1}{||c}{$\neg Rot$} & \multicolumn{1}{|c|}{$Rot$} \\ \cline{1-8}
+% \multicolumn{2}{|c}{1} & 
+% \multicolumn{1}{|c}{431} & \multicolumn{1}{|c}{431} & \multicolumn{1}{|c}{431} & \multicolumn{1}{|c}{431} & \multicolumn{1}{|c}{$431 \pm 0$} & \multicolumn{1}{|c|}{$431 \pm 0$} \\ \cline{1-8}
+\multicolumn{2}{|c}{2} & 
+\multicolumn{1}{||c}{424} & \multicolumn{1}{|c}{$\mathbf{334}$} & \multicolumn{1}{||c}{$\mathbf{431}$} & \multicolumn{1}{|c}{442} & \multicolumn{1}{||c}{$426 \pm 4$} & \multicolumn{1}{|c|}{$\mathbf{418} \pm 31$} \\ \cline{1-8}
+\multicolumn{2}{|c}{3} & 
+\multicolumn{1}{||c}{362} & \multicolumn{1}{|c}{$\mathbf{345}$} & \multicolumn{1}{||c}{$\mathbf{431}$} & \multicolumn{1}{|c}{453} & \multicolumn{1}{||c}{$\mathbf{381} \pm 21$} & \multicolumn{1}{|c|}{$413 \pm 38$} \\ \cline{1-8}
+\end{tabular}
+\end{table}
+%=================================================================
+\section{Maximizado de iluminación}
+\label{sec-analisisExperimental:maximizadoIluminacion}
+Este experimento consiste en maximizar la iluminación en una superficie objetivo dada.
+La superficie que se intenta maximizar en este caso es la pared que se encuentra en el segundo piso de la escena
+del Patio (Figura~\ref{cap-exp:fig:patio_ghost}) y como restricción se plantea que la suma de la potencia eléctrica
+consumida por las luminarias no supere los 100 watts. Además se establece en 25000 la cantidad máxima de
+iteraciones que el algoritmo puede realizar.
+
+La Tabla~\ref{cap-exp:tab:max_illumination} muestra los resultados para este experimento. Para cualquier número
+de luminarias, las soluciones con rotaciones generan mejores iluminaciones.
+Incluso en el peor caso los resultados son mejores cuando hay rotaciones.
+
+\begin{table}[!htbp]
+%\footnotesize
+\caption{Resultados de optimización para el experimento de maximizar la cantidad de iluminación recibida en una superficie objetivo dada, sujeto a una cantidad máxima de consumo eléctrico (100 W) en la suma de las luminarias utilizadas en la configuración.}
+\label{cap-exp:tab:max_illumination}
+\centering
+\begin{tabular}{cccccccc}\cline{1-8}
+\multicolumn{2}{|c}{\multirow{2}{*}{\#lum}} & \multicolumn{2}{||c}{mejor (lx)} & \multicolumn{2}{||c}{peor (lx)} & \multicolumn{2}{||c|}{$\mu \pm \sigma$ (lx)}\\ \cline{3-8}
+\multicolumn{2}{|c}{} & \multicolumn{1}{||c}{$\neg Rot$} & \multicolumn{1}{|c}{$Rot$} & \multicolumn{1}{||c}{$\neg Rot$} & \multicolumn{1}{|c}{$Rot$} & \multicolumn{1}{||c}{$\neg Rot$} & \multicolumn{1}{|c|}{$Rot$} \\ \cline{1-8}
+\multicolumn{2}{|c}{1} & 
+\multicolumn{1}{||c}{29} & \multicolumn{1}{|c}{$\mathbf{38}$} & \multicolumn{1}{||c}{26} & \multicolumn{1}{|c}{$\mathbf{30}$} & \multicolumn{1}{||c}{$29 \pm 1$} & \multicolumn{1}{|c|}{$\mathbf{36} \pm 2$} \\ \cline{1-8}
+\multicolumn{2}{|c}{2} & 
+\multicolumn{1}{||c}{40} & \multicolumn{1}{|c}{$\mathbf{51}$} & \multicolumn{1}{||c}{28} & \multicolumn{1}{|c}{$\mathbf{30}$} & \multicolumn{1}{||c}{$35 \pm 6$} & \multicolumn{1}{|c|}{$\mathbf{38} \pm 6$} \\ \cline{1-8}
+\multicolumn{2}{|c}{3} & 
+\multicolumn{1}{||c}{38} & \multicolumn{1}{|c}{$\mathbf{52}$} & \multicolumn{1}{||c}{29} & \multicolumn{1}{|c}{$\mathbf{35}$} & \multicolumn{1}{||c}{$36 \pm 2$} & \multicolumn{1}{|c|}{$\mathbf{44} \pm 5$} \\ \cline{1-8}
+\end{tabular}
+\end{table}
+%=================================================================
+\section{Uniformidad de la luz en una superficie}
+\label{sec-analisisExperimental:uniformidad}
+El objetivo de alcanzar uniformidad en la luz producida en un diseño de iluminación es de suma importancia para
+alcanzar ambientes más atractivos y funcionales \cite{LightAndLighting2011}. En esta sección evaluamos objetivos de
+uniformidad en la luz producida en la escena.
+
+El coeficiente de varianza (CV = $\sigma / \mu$) \cite{Canavos1984} es una forma de medir que tan uniformemente
+se distribuye una magnitud (a menor CV la magnitud es más uniforme). Esto es la medida de dispersión normalizada.
+En este experimento medimos la uniformidad de la luz y tenemos como objetivo minimizar el CV para así buscar la
+solución con la mayor uniformidad posible. Por lo tanto, el objetivo es como sigue:
+
+\begin{equation}
+\label{cap-exp:eq:coefVarianza}
+\min: \frac{\sigma(\tilde{B})}{\mu(\tilde{B})} = \min: \textrm{CV}
+\end{equation}
+
+La máxima cantidad de iteraciones permitida en este experimento es de 25000 y las escenas utilizadas son el Patio y 
+el Ocho (Figuras \ref{cap-exp:fig:patio_ghost} y \ref{cap-exp:fig:eight_ghost}). Debido a la complejidad de la
+geometría de la escena con forma de ocho, esta resulta más interesante para ser evaluada en este experimento. La
+superficie objetivo es en ambos casos el piso de cada escena.
+
+La Tabla~\ref{cap-exp:tab:uniformityCoefVarianza} muestra los resultados numéricos obtenidos para las
+optimizaciones. Como se puede ver en dicha tabla, la uniformidad de la luz obtenida en la escena mejora cuando se
+permite al algoritmo utilizar más luminarias por configuración. Esto es debido a que a medida que se da
+mayor libertad en la cantidad de luminarias a utilizar, estas se pueden ubicar y rotar de forma que la luz emitida por
+las mismas se complementen entre sí. 
+Es importante destacar nuevamente que el uso de la luminaria vacía permite que una configuración tenga menos
+luminarias que las máximas indicadas.
+
+\begin{table}[!htbp]
+%\footnotesize
+\caption{Resultados de la optimización para el experimento de uniformidad en la luz donde se muestra el coeficiente de varianza obtenido para cada escena y cantidad de luminarias evaluados. La columna $Patio$ contiene los resultados para el Patio y la columna $Ocho$ los resultados para la escena con forma de ocho.}
+\label{cap-exp:tab:uniformityCoefVarianza}
+\centering
+\begin{tabular}{cccccccc}\cline{1-8}
+\multicolumn{2}{|c}{\multirow{2}{*}{\#lum}} & \multicolumn{2}{||c}{mejor CV ($\times10^{-2}$)} & \multicolumn{2}{||c}{peor CV ($\times10^{-2}$)} & \multicolumn{2}{||c|}{$\mu(\textrm{CV}) \pm \sigma(\textrm{CV})$ ($\times10^{-2}$)} \\ \cline{3-8}
+\multicolumn{2}{|c}{} & \multicolumn{1}{||c}{\;\;$Patio$\;\;} & \multicolumn{1}{|c}{$Ocho$} & \multicolumn{1}{||c}{$\;\;\;Patio\;\;\;$} & \multicolumn{1}{|c}{$Ocho$} & \multicolumn{1}{||c}{$Patio$} & \multicolumn{1}{|c|}{$Ocho$} \\ \cline{1-8}
+\multicolumn{2}{|c}{1} & 
+\multicolumn{1}{||c}{4,0} & \multicolumn{1}{|c}{90} & \multicolumn{1}{||c}{6,0} & \multicolumn{1}{|c}{96} & \multicolumn{1}{||c}{$4,4 \pm 0,8$} & \multicolumn{1}{|c|}{$93 \pm 3$} \\ \cline{1-8}
+\multicolumn{2}{|c}{2} & 
+\multicolumn{1}{||c}{3,1} & \multicolumn{1}{|c}{42} & \multicolumn{1}{||c}{5,2} & \multicolumn{1}{|c}{52} & \multicolumn{1}{||c}{$4.1 \pm 0,6$} & \multicolumn{1}{|c|}{$46 \pm 3$} \\ \cline{1-8}
+\multicolumn{2}{|c}{3} & 
+\multicolumn{1}{||c}{2,6} & \multicolumn{1}{|c}{21} & \multicolumn{1}{||c}{4,8} & \multicolumn{1}{|c}{33} & \multicolumn{1}{||c}{$3,7 \pm 0,6$} & \multicolumn{1}{|c|}{$26 \pm 3$} \\ \cline{1-8}
+\end{tabular}
+\end{table}
+
+En la Figura \ref{cap-exp:fig:isolines_ocho} se pueden ver los intervalos de iluminación (renderizadas utilizando Dialux)
+calculados para la superficie objetivo. Cuando se utiliza una mayor cantidad de luminarias, la emisión de estas crea una
+iluminación con una mejor distribución, más uniforme. 
+La Figura~\ref{cap-exp:fig:eight} muestra la iluminación producida en la escena correspondientes a los intervalos de
+iluminación en la Figura~\ref{cap-exp:fig:isolines_ocho}.
+
+\begin{landscape}
+\begin{figure*}[!ht]
+\centering
+\begin{subfigure}[1 luminaria, CV = 0.90.]
+{\includegraphics[width=0.32\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/experimentos/Num81Lum}}
+\end{subfigure}
+\begin{subfigure}[2 luminarias, CV = 0.42.]
+{\includegraphics[width=0.32\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/experimentos/Num82Lum}}
+\end{subfigure}
+\begin{subfigure}[3 luminarias, CV = 0.21.]
+{\includegraphics[width=0.32\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/experimentos/Num83Lum}\label{cap-exp:fig:isolines_ocho}}
+\end{subfigure}
+\mbox{}
+\caption{\label{cap-exp:fig:isolines_ocho}Intervalos de iluminación generados para el experimento de uniformidad, al variar la cantidad de luminarias (1, 2, 3 de izquierda a derecha). Imágenes generadas con Dialux. Las bombillas muestran dónde se localizan las luminarias (en el techo de la escena).}
+\end{figure*}
+\end{landscape}
+%---------------------------------------------------------------------------------------------------------------------------------
+%=================================================================
+\section{Evaluación paralela de individuos}
+\label{sec-analisisExperimental:evaluacionParalela}
+El experimento consiste en analizar el efecto de aplicar técnicas de evaluación paralela para la metaheurística VNS 
+con el objetivo de conseguir una mejora en la eficiencia computacional (como fue descrito en la
+Sección~\ref{sec:radiosidad_multiple_candidatos}). Este experimento se realiza con los mismos objetivos y
+restricciones que los utilizados en el experimento de eficiencia en consumo eléctrico
+(Sección~\ref{sec-analisisExperimental:eficienciaElectrica}), comparando los tiempos necesarios para realizar las
+iteraciones con dicho experimento.
+
+Para este experimento se configuró como máximo número de iteraciones a 25000 y como escena al Patio.
+
+La Tabla~\ref{cap-exp:tab:performance_parallel_local_search} muestra los tiempos necesarios para realizar la
+optimización usando la evaluación paralela de individuos. $Par$ representa la optimización utilizando la evaluación
+paralela, mientras que $Sec$ representa cuando se utiliza la evaluación secuencial de individuos.
+Como se puede observar se obtiene una aceleración del algoritmo paralelo frente al secuencial. El aumento de
+velocidad (speedup) es calculado como el cociente $^{Sec}$/$_{Par}$ para los valores medios de $Par$ y $Sec$.
+
+\begin{table}[!htbp]
+%\footnotesize
+\caption{Resultados de mejora de performance para la evaluación paralela de individuos. Los tiempos son medidos y promediados para 20 ejecuciones independientes. Los individuos evaluados en paralelo, por el producto matriz-matriz, están entre 200 y 1700.}
+\label{cap-exp:tab:performance_parallel_local_search}
+\centering
+\begin{tabular}{cccccccccc}\cline{1-10}
+\multicolumn{2}{|c}{\multirow{2}{*}{\#lum}} & \multicolumn{2}{||c}{mejor (m)} & \multicolumn{2}{||c}{peor (m)} & \multicolumn{2}{||c|}{$\mu \pm \sigma$ (m)} & \multicolumn{2}{||c|}{\multirow{2}{*}{speedup}}\\ \cline{3-8}
+\multicolumn{2}{|c}{} & \multicolumn{1}{||c}{$Sec$} & \multicolumn{1}{|c}{$Par$} & \multicolumn{1}{||c}{$Sec$} & \multicolumn{1}{|c}{$Par$} & \multicolumn{1}{||c}{$Sec$} & \multicolumn{1}{|c|}{$Par$} & \multicolumn{2}{||c|}{} \\ \cline{1-10}
+
+\multicolumn{2}{|c}{1} & 
+\multicolumn{1}{||c}{25} & \multicolumn{1}{|c}{$\mathbf{22}$} & \multicolumn{1}{||c}{34} & \multicolumn{1}{|c}{$\mathbf{31}$} & \multicolumn{1}{||c}{$29 \pm 4$} & \multicolumn{1}{|c|}{$\mathbf{23} \pm 3$} & \multicolumn{2}{||c|}{1,26} \\ \cline{1-10}
+\multicolumn{2}{|c}{2} & 
+\multicolumn{1}{||c}{54} & \multicolumn{1}{|c}{$\mathbf{44}$} & \multicolumn{1}{||c}{76} & \multicolumn{1}{|c}{$\mathbf{47}$} & \multicolumn{1}{||c}{$62 \pm 8$} & \multicolumn{1}{|c|}{$\mathbf{45} \pm 1$} & \multicolumn{2}{||c|}{1,38} \\ \cline{1-10}
+\multicolumn{2}{|c}{3} & 
+\multicolumn{1}{||c}{69} & \multicolumn{1}{|c}{$\mathbf{67}$} & \multicolumn{1}{||c}{107} & \multicolumn{1}{|c}{$\mathbf{69}$} & \multicolumn{1}{||c}{$76 \pm 14$} & \multicolumn{1}{|c|}{$\mathbf{67} \pm 1$} & \multicolumn{2}{||c|}{1,13} \\ \cline{1-10}
+\end{tabular}
+\end{table}
+
+Es importante notar que si bien el cálculo de la radiosidad es realizado en paralelo (producto matriz-matriz de la
+Sección~\ref{sec:radiosidad_multiple_candidatos}), el resto de las operaciones del algoritmo siguen siendo
+secuenciales.
+%=================================================================
+\section{Algoritmo de ordenamiento}
+\label{sec-analisisExperimental:algoritmoOrdenado}
+Todos los experimentos y resultados, excepto el de esta sección, fueron evaluados realizando el
+ordenamiento de las luminarias por medio del Algoritmo~\ref{alg:sort_alg}. Este experimento
+se realiza con los mismos objetivos y restricciones que los del experimento de eficiencia eléctrica
+(Sección~\ref{sec-analisisExperimental:eficienciaElectrica}) pero sin utilizar el ordenamiento de luminarias.
+
+Comparando los resultados presentados en las Tablas \ref{cap-exp:tab:power_efficiency} y \ref{cap-exp:tab:nosorting}
+es posible identificar que cuando las luminarias están ordenadas, se tienen soluciones
+con un mayor consumo eléctrico que los obtenidos cuando sí están ordenadas. Por lo tanto es posible concluir que el
+ordenamiento resulta en beneficio de la búsqueda de óptimos cuando se utiliza el VNS como metaheurística de
+búsqueda.
+
+\begin{table}[!htbp]
+%\footnotesize
+\caption{Resultados de optimización sin utilizar el algoritmo de ordenamiento.}
+\label{cap-exp:tab:nosorting}
+\centering
+\begin{threeparttable}
+\begin{tabular}{|c|c|c|c|}
+\hline
+\multicolumn{1}{|c|}{{\# lum}} &
+\multicolumn{1}{c|}{mejor (W)} &
+\multicolumn{1}{c|}{peor (W)} &
+\multicolumn{1}{c|}{$\mu \pm \sigma$ (W)} \\ \hline
+%1 & 431 & 431 & $431 \pm 0$ \\ \hline
+2 & 371 & 442 & $433 \pm 14$ \\ \hline
+3 & 365 & 453 & $417 \pm 30$ \\ \hline
+\end{tabular}
+\end{threeparttable}
+\end{table}
+%=================================================================
+\section{Desempeño computacional}
+\label{sec-analisisExperimental:desComputacional}
+En esta sección se evalúan algunas de las variables y sus efectos en cuanto al desempeño computacional.
+%---------------------------------------------------------------------------------------------------------------------------------
+\subsection{Cantidad de luminarias}
+\label{sec-analisisExperimental:cantidadLuminarias}
+Los datos que se muestran en esta evaluación de rendimiento son tomados de ejecuciones realizando las
+optimizaciones con los objetivos y restricciones del experimento de eficiencia en consumo eléctrico
+(Sección~\ref{sec-analisisExperimental:eficienciaElectrica}). Para este experimento se configuró como máximo
+número de iteraciones a 25000 y como escena al Patio.
+En este experimento se estudia el efecto en el desempeño computacional que causa la cantidad de luminarias
+utilizadas en una configuración.
+
+La relación entre la cantidad de luminarias y el tiempo necesario para realizar las optimizaciones se muestra en
+la Tabla~\ref{cap-exp:tab:performance}, donde se puede observar que existe una relación aproximadamente
+lineal entre el aumento de la cantidad de luminarias y el tiempo que toma realizar la optimización. Esto es debido
+a que agregar una luminaria a la configuración implica calcular su emisión en la escena y acumularlo en $E$, o sea
+incrementa en 1 los pasos realizados en la sumatoria presentada en la Ecuación~\ref{ec-capDetallesDelMetodo:radiosityWithEmissionEquation_many}.
+
+\begin{table}[!htbp]
+%\footnotesize
+\caption{Resultados en minutos de rendimiento para el algoritmo evaluando el uso de rotaciones y cantidad de luminarias.}
+\label{cap-exp:tab:performance}
+\centering
+\begin{tabular}{cccccccccc}\cline{1-10}
+\multicolumn{2}{|c}{\multirow{2}{*}{\#lum}} & \multicolumn{2}{||c}{mejor (m)} & \multicolumn{2}{||c}{peor (m)} & \multicolumn{2}{||c|}{$\mu \pm \sigma$ (m)} & \multicolumn{2}{||c|}{$\# it/s$} \\ \cline{3-10}
+\multicolumn{2}{|c}{} & \multicolumn{1}{||c}{$\neg Rot$} & \multicolumn{1}{|c}{$Rot$} & \multicolumn{1}{||c}{$\neg Rot$} & \multicolumn{1}{|c}{$Rot$} & \multicolumn{1}{||c}{$\neg Rot$} & \multicolumn{1}{|c|}{$Rot$} & \multicolumn{1}{||c}{$\neg Rot$} & \multicolumn{1}{|c|}{$Rot$} \\ \cline{1-10}
+
+\multicolumn{2}{|c}{1} & 
+\multicolumn{1}{||c}{$\mathbf{13}$} & \multicolumn{1}{|c}{22} & \multicolumn{1}{||c}{$\mathbf{15}$} & \multicolumn{1}{|c}{31} & \multicolumn{1}{||c}{$\mathbf{14} \pm 1$} & \multicolumn{1}{|c|}{$23 \pm 3$} & \multicolumn{1}{||c}{$\mathbf{30}$} & \multicolumn{1}{|c|}{18} \\ \cline{1-10}
+\multicolumn{2}{|c}{2} & 
+\multicolumn{1}{||c}{$\mathbf{22}$} & \multicolumn{1}{|c}{44} & \multicolumn{1}{||c}{$\mathbf{24}$} & \multicolumn{1}{|c}{47} & \multicolumn{1}{||c}{$\mathbf{23} \pm 1$} & \multicolumn{1}{|c|}{$45 \pm 1$} & \multicolumn{1}{||c}{$\mathbf{18}$} & \multicolumn{1}{|c|}{9} \\ \cline{1-10}
+\multicolumn{2}{|c}{3} & 
+\multicolumn{1}{||c}{$\mathbf{32}$} & \multicolumn{1}{|c}{67} & \multicolumn{1}{||c}{$\mathbf{37}$} & \multicolumn{1}{|c}{69} & \multicolumn{1}{||c}{$\mathbf{33} \pm 1$} & \multicolumn{1}{|c|}{$67 \pm 1$} & \multicolumn{1}{||c}{$\mathbf{13}$} & \multicolumn{1}{|c|}{6} \\ \cline{1-10}
+\end{tabular}
+\end{table}
+
+Además podemos concluir que el algoritmo con rotaciones toma unas 2 veces más tiempo que el algoritmo sin
+rotaciones para realizar la misma cantidad de iteraciones (ver Tabla~\ref{cap-exp:tab:performance}).
+%---------------------------------------------------------------------------------------------------------------------------------
+\subsection{Tamaño de hemi-cubo}
+\label{sec-analisisExperimental:tamhemi-cubo}
+En este experimento se estudia el efecto en el desempeño computacional que causa el tamaño de hemi-cubos utilizado
+por el algoritmo para realizar los cálculos.
+Para este experimento se configuró como máximo número de iteraciones 25000 y la escena del Patio, además se
+utilizaron los mismos objetivos y restricciones que en el experimento de eficiencia en consumo eléctrico
+(Sección~\ref{sec-analisisExperimental:eficienciaElectrica}). Los experimentos son realizados sin utilizar rotaciones.
+
+La Tabla~\ref{cap-exp:tab:perfs-hemicubeSize} muestra el consumo eléctrico de las configuraciones obtenidas en
+la optimización y los tiempos que toma encontrarlas para los distintos tamaños de hemi-cubos evaluados.
+Como se puede notar hemi-cubos más pequeños resultan en un mejor desempeño pero retornan soluciones con peor
+consumo eléctrico.
+Esto es debido a que hemi-cubos más pequeños contienen menor información de la escena y por lo tanto resultan en
+cálculos menos precisos.
+
+Para el paso de pre-cómputo, también se realiza un experimento que mide los tiempos necesarios para realizarlo
+evaluando distintos tamaños de hemi-cubos. En la Tabla~\ref{cap-exp:tab:perfs-precomputation}, el aumento del tamaño de los hemi-cubos tiene como efecto el aumento del tiempo necesario para realizar el pre-cómputo.
+
+\begin{table}[!htbp]
+%\footnotesize
+\caption{Resultados de optimización para distintos tamaños de hemi-cubos.}
+\label{cap-exp:tab:perfs-hemicubeSize}
+\centering
+\begin{threeparttable}
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+\multicolumn{1}{|c|}{$\mathbf{H}$} &
+\multicolumn{1}{c|}{$\mu $$\pm$$\sigma$ (W)} &
+\multicolumn{1}{c|}{$\mu $$\pm$$\sigma$ (s)} &
+\multicolumn{1}{c|}{error} &
+\multicolumn{1}{c|}{speedup} \\ \hline
+$512 \times 512$ & $152$$\pm$$10$ & $1061$$\pm$$12$ & - & -\\ \hline
+$256 \times 256$ & $162$$\pm$$11$ & $408$$\pm$$8$ & 0,068 & 2,6\\ \hline
+$128 \times 128$ & $186$$\pm$$13$ & $262$$\pm$$14$ & 0,225 & 4,1\\ \hline
+$64 \times 64$ & $260$$\pm$$35$ & $224$$\pm$$13$ & 0,711 & 4,8\\ \hline
+\end{tabular}
+\end{threeparttable}
+\end{table}
+
+\begin{table}[!htbp]
+%\footnotesize
+\caption{Resultados de tiempos necesarios para realizar la etapa de pre-cómputo.}
+\label{cap-exp:tab:perfs-precomputation}
+\centering
+\begin{threeparttable}
+\begin{tabular}{|c|c|c|}
+\hline
+\multicolumn{1}{|c|}{$\mathbf{H}$} &
+\multicolumn{1}{c|}{tiempo total (s)} &
+\multicolumn{1}{c|}{speedup} \\ \hline
+$512 \times 512$ & 20654 & - \\ \hline
+$256 \times 256$ & 4860 & 4,3 \\ \hline
+$128 \times 128$ & 1382 & 14,9 \\ \hline
+$64 \times 64$ & 354 & 58,3\\ \hline
+\end{tabular}
+\end{threeparttable}
+\end{table}
+%---------------------------------------------------------------------------------------------------------------------------------
+%=================================================================
+\section{Algoritmo Evolutivo}
+\label{sec-analisisExperimental:algoritmoEvolutivo}
+Este experimento evalúa la técnica de algoritmos evolutivos utilizada como alternativa para realizar la búsqueda
+de soluciones (candidatos). Cabe destacar que para esta técnica no es necesario tener ordenadas las luminarias, 
+obteniendo el consiguiente ahorro en tiempo de pre-cómputo.
+
+En este experimento se utiliza la función de fitness descrita en la Ecuación~\eqref{cap-exp:eq:funcion_fitness} y se
+evalúan los resultados con el algoritmo de VNS.
+La función de fitness representa la sumatoria de las potencias de las luminarias seleccionadas y se agregan dos
+funciones de penalización (Ecuaciones \eqref{eq:funcion_penalty_max} y \eqref{cap-exp:eq:funcion_penalty_min}) para
+aquellas soluciones que no cumplan las restricciones impuestas. 
+
+\begin{equation}
+\label{cap-exp:eq:funcion_fitness}
+\begin{cases}
+\sum_{i=1}^{n}P_{i} + pMin(Config) + pMax(Config) \\
+Config = (x_{1}, y_{1},l_1, ..., x_{i}, y_{i},l_i,..., x_{n}, y_{n},l_n)
+\end{cases}
+\end{equation}
+
+donde $P$ es un vector con las potencias en watts de cada luminaria ($P_i$ la potencia de la i-ésima
+luminaria en la configuración), $x_i$ e $y_i$ son las coordenadas espaciales de la i-ésima luminaria seleccionada
+en la configuración, $l_i$ es el índice en la base de datos de la i-ésima luminaria seleccionada en la configuración,
+$n$ es la cantidad total de luminarias que puede tener la configuración, pMax y pMin son las funciones de
+penalización siguientes:
+
+\begin{equation}
+\label{eq:funcion_penalty_max}
+\begin{cases}
+pMin(Config) = ((max(100 - (min(B_{Sup})/A_{Sup}), 0)^2)*100) + max(P)*n, \\ 
+\hspace{2.3cm} cuando \hspace{0.1cm} max(100 - (min(B_{Sup})/A_{Sup}), 0)^2)*100 > 0 \\
+\textit{y vale 0 en el resto de los casos}
+\end{cases}
+\end{equation}
+
+\begin{equation}
+\label{cap-exp:eq:funcion_penalty_min}
+\begin{cases}
+pMax(Config) = ((max((max(B_{Sup})/A_{Sup}) - 750, 0)^2)*100) + max(P)*n, \\
+\hspace{2.3cm} cuando \hspace{0.1cm} max((max(B_{Sup})/A_{Sup}) - 750, 0)^2)*100 > 0 \\
+\textit{y vale 0 en el resto de los casos}
+\end{cases}
+\end{equation}
+
+En las funciones de penalización $A_{Sup}$ representa el área de cada parche de la superficie objetivo y $B_{Sup}$
+es un vector que contiene los valores de radiosidad para cada parche de la superficie objetivo.
+
+El análisis en esta sección se enfoca en realizar la evaluación del desempeño del algoritmo en base a la calidad
+de soluciones obtenidas en los casos donde se evalúa la iluminación utilizando 2, 3 y 4 luminarias.
+Para este experimento se utilizó la escena del Patio.
+
+%---------------------------------------------------------------------------------------------------------------------------------
+\subsection{Ajuste paramétrico}
+En el algoritmo evolutivo se realizó una etapa de ajuste paramétrico.
+Debido a que los algoritmos evolutivos resultan intrínsecamente no determinísticos, previo al análisis experimental,
+es necesario realizar un ajuste de los parámetros de probabilidad de cruzamiento ($P_{c}$), probabilidad de mutación
+($P_{m}$) y el tamaño de la población  ($TPob$). El objetivo del ajuste es encontrar la combinación de estos parámetros
+que logre alcanzar los mejores resultados para el caso estudiado. Para realizar dicho ajuste se crearon las combinaciones
+resultantes del producto cartesiano de los conjuntos; probabilidad de cruzamiento $P_{m}$ = $\{$0,01; 0,02; 0,03$\}$,
+probabilidad de mutación $P_{c}$ = $\{$0,45; 0,60; 0,75 $\}$ y tamaño de población $TPob = \{20; 40; 60 \}$
+(ver \ref{cap-exp:eq:paramAjuste}).
+
+\begin{equation}
+\label{cap-exp:eq:paramAjuste}
+\begin{split}
+Casos = P_{m} \times P_{c} \times TPob \\ 
+donde \\ 
+P_{m} = \{\textrm{0,01; 0,02; 0,03}\} \\
+P_{c} = \{\textrm{0,45; 0,60; 0,75}\} \\
+TPob = \{20; 40; 60 \}
+\end{split} 
+\end{equation}
+
+Resultando en 27 casos. Luego se corrieron 20 ejecuciones independientes con criterio de parada el
+alcanzar 300 generaciones o que 100 generaciones consecutivas cumplan que el promedio de cambio
+promedio relativo a la función de fitness sea menor a $1 \times 10^{-3}$.
+
+Los resultados obtenidos luego del análisis paramétrico (ver Tabla~\ref{cap-exp:tab:paramAjuste} y 
+Figura~\ref{cap-exp:fig:paramAjuste}) determinan que los mejores resultados para las configuraciones estudiadas,
+se dan en la configuración determinada por los paramétros, $P_{m}=$ $0,03$, $P_{m}$=$0,45$, $TPob=60$.
+
+\begin{table}[!htbp]
+\caption{Resultados de ejecuciones de 20 instancias para cada combinación de probabilidad de mutación con probabilidad de cruzamiento y con tamaño de la población. Tiempo reportado en segundos. De esta tabla es posible determinar la combinación de parámetros, de entre los estudiados, que retorna mejores soluciones en promedio. Se reporta la media y desviación estándar de la sumatoria de potencias de las luminarias en la configuracón y del tiempo necesario para realizar la optimización. }
+\label{cap-exp:tab:paramAjuste}
+\centering
+\begin{threeparttable}
+\begin{tabular}{|c|c|c||c||c|}
+\hline
+\multicolumn{1}{|c|}{\bf $P_{m}$} &
+\multicolumn{1}{c|}{\bf $P_{c}$} &
+\multicolumn{1}{c||}{\bf $TPob$} &
+\multicolumn{1}{c||}{\bf $\mu(F)\pm \sigma$} &
+\multicolumn{1}{c|}{\bf $\mu(t)\pm \sigma$} \\ \hline
+0,01 & 0,45 & 20 & $196 \pm 16$ & $432 \pm 130$ \\
+0,01 & 0,45 & 40 & $185 \pm 16$ & $328 \pm 113$ \\
+0,01 & 0,45 & 60 & $176 \pm 13$ & $441 \pm 150$ \\
+0,01 & 0,60 & 20 & $195 \pm 13$ & $158 \pm 42$ \\
+0,01 & 0,60 & 40 & $189 \pm 12$ & $286 \pm 83$ \\
+0,01 & 0,60 & 60 & $185 \pm 13$ & $392 \pm 117$ \\
+0,01 & 0,75 & 20 & $198 \pm 14$ & $151 \pm 49$ \\
+0,01 & 0,75 & 40 & $184 \pm 14$ & $276 \pm 88$ \\
+0,01 & 0,75 & 60 & $182 \pm 14$ & $383 \pm 104$ \\\cline{1-5}
+0,02 & 0,45 & 20 & $191 \pm 11$ & $179 \pm 69$ \\
+0,02 & 0,45 & 40 & $179 \pm 12$ & $308 \pm 101$ \\
+0,02 & 0,45 & 60 & $172 \pm 10$ & $369 \pm 104$ \\
+0,02 & 0,60 & 20 & $191 \pm 15$ & $164 \pm 58$ \\
+0,02 & 0,60 & 40 & $182 \pm 13$ & $264 \pm 86$ \\
+0,02 & 0,60 & 60 & $179 \pm 14$ & $374 \pm 126$ \\
+0,02 & 0,74 & 20 & $194 \pm 17$ & $186 \pm 65$ \\
+0,02 & 0,75 & 40 & $184 \pm 14$ & $330 \pm 132$ \\
+0,02 & 0,75 & 60 & $174 \pm 15$ & $405 \pm 126$ \\\cline{1-5}
+0,03 & 0,45 & 20 & $188 \pm 14$ & $175 \pm 54$ \\
+0,03 & 0,45 & 40 & $172 \pm 12$ & $321 \pm 128$ \\
+0,03 & 0,45 & 60 & $\mathbf{171} \pm 11$ & $450 \pm 125$ \\
+0,03 & 0,60 & 20 & $186 \pm 27$ & $171 \pm 52$ \\
+0,03 & 0,60 & 40 & $177 \pm 13$ & $287 \pm 85$ \\
+0,03 & 0,60 & 60 & $176 \pm 14$ & $456 \pm 135$ \\
+0,03 & 0,75 & 20 & $199 \pm 27$ & $174 \pm 65$ \\
+0,03 & 0,75 & 40 & $178 \pm 12$ & $342 \pm 138$ \\
+0,03 & 0,75 & 60 & $177 \pm 14$ & $363 \pm 109$ \\\cline{1-5}
+\end{tabular}
+\end{threeparttable}
+\end{table}
+
+
+\begin{figure*}[!htp]
+\centering
+\begin{subfigure}[$Pm=$0,01]
+{\includegraphics[width=0.60\linewidth, trim={0cm 0cm 0cm 0cm},clip]{./img/experimentos/algevo/paramEstm0_01}\label{cap-exp:fig:paramEstm0_01}}
+\end{subfigure}
+\hfill
+
+\centering
+\begin{subfigure}[$Pm=$0,02]
+{\includegraphics[width=0.60\linewidth, trim={0cm 0cm 0cm 0cm},clip]{./img/experimentos/algevo/paramEstm0_02}\label{cap-exp:fig:paramEstm0_02}}
+\end{subfigure}
+\hfill
+
+\centering
+\begin{subfigure}[$Pm=$0,03]
+{\includegraphics[width=0.60\linewidth, trim={0cm 0cm 0cm 0cm},clip]{./img/experimentos/algevo/paramEstm0_03}\label{cap-exp:fig:paramEstm0_03}}
+\end{subfigure}
+\mbox{}
+\caption{\label{cap-exp:fig:paramAjuste}Resultados de ajuste paramétrico con poblaciones de 20, 40 y 60 individuos para cada probabilidad de mutación ($Pm$) y cada probabilidad de cruzamiento ($Pc$). Eje y representa la suma, medida en watts, del consumo de las luminarias en la configuración.}
+\end{figure*}
+
+Luego de ajustados los parámetros se realizaron optimizaciones con la mejor configuración paramétrica.
+En este caso se realizaron para cada instancia 30 ejecuciones independientes (en lugar de las 20 realizadas
+en el ajuste de parámetros).
+El algoritmo implementado consiste en un algoritmo evolutivo basado en el modelo de evolución $(\mu,\lambda)$
+y en el uso de los operadores evolutivos antes mencionados (ver Sección~\ref{subsec:operadores_evolutivos}).
+
+%---------------------------------------------------------------------------------------------------------------------------------
+\break
+\subsection{Test de Kolmogorov-Smirnov}
+Se aplicó el test de Kolmogorov-Smirnov para determinar si es posible descartar que los fitness obtenidos mediante
+la aplicación de los algoritmos resultan normales. En ambos casos, el algoritmo evolutivo y el algoritmo basado en
+VNS, se obtuvo que no es posible descartar la hipótesis de que las muestras no cumplan tener una distribución
+normal, retornando un p-valor de $6,96 \times 10^{-28}$. 
+En la Figura~\ref{cap-exp:fig:ECDF} se pueden ver los gráficos de comparación de los resultados obtenidos para cada
+algoritmo en comparación a la curva normal, notándose que se aproximan a esta. 
+Esto nos permite realizar el test de Student para comparar los resultados obtenidos en ambos algoritmos y estudiar
+cuál de estos retorna mejores resultados.
+
+\begin{figure*}[!htp]
+\centering
+\begin{subfigure}[Algoritmo Evolutivo]
+{\includegraphics[width=0.49\linewidth, trim={0cm 5cm 0cm 5cm},clip]{./img/experimentos/algevo/ECDF2lumsEA.pdf}\label{cap-exp:fig:paramEstm0_01}}
+\end{subfigure}
+\hfill
+\begin{subfigure}[VNS]
+{\includegraphics[width=0.49\linewidth, trim={0cm 5cm 0cm 5cm},clip]{./img/experimentos/algevo/ECDF2lumsVNS.pdf}\label{cap-exp:fig:paramEstm0_02}}
+\end{subfigure}
+\hfill
+
+\mbox{}
+\caption{\label{cap-exp:fig:ECDF}Gráfico de comparación con curva normal. En ambos casos las curvas son similares a la de la distribución normal.}
+\end{figure*}
+
+%\begin{table}[!htbp]
+%\caption{Resultados del test de normalidad de Kolmogorov-Smirnov. $h$ = 1 indica que el test de Kolmogorov-Smirnov no rechaza la hipótesis de que la distribución del EA o el VNS siga una distribución normal, con un p-valor del 5\%. La columna $p$-valor muestra la probabilidad de que se cumpla dicha hipótesis.}
+%\label{cap-exp:tab:kstest}
+%\centering
+%\begin{threeparttable}
+%\begin{tabular}{|c|c|c|}
+%\hline
+%\multicolumn{1}{|c|}{\bf $Algoritmo$} &
+%\multicolumn{1}{c|}{\bf $h$} &
+%\multicolumn{1}{c|}{$p$-valor} \\ \hline
+%EA & 1 & $6,96 \times 10^{-28}$ \\
+%VNS & 1 & $6,96 \times 10^{-28}$ \\ \hline
+%\end{tabular}
+%\end{threeparttable}
+%\end{table}
+
+%---------------------------------------------------------------------------------------------------------------------------------
+\subsection{Comparación entre algoritmos}
+En la Tabla~\ref{cap-exp:tab:resultadosInstancias} y Figura~\ref{cap-exp:fig:resultadisInstancias} se reportan
+los resultados obtenidos para las tres instancias evaluadas (dos, tres y cuatro luminarias) para ambos
+algoritmos. Como se puede ver en dicha tabla el algoritmo EA solamente logró mejorar el mejor fitness del VNS para la
+instancia con tres luminarias. Sin embargo, en los demás casos y para la media siempre se tienen mejores
+resultados mediante la aplicación del algoritmo basado en VNS notándose grandes diferencias en los resultados
+de las madias entre ambos algoritmos.
+
+En cuanto a la performance los resultados muestran que el algoritmo basado en VNS retorna mejores soluciones en
+todos los casos.
+
+\begin{table}[!htbp]
+\caption{Resultados de instancias evaluadas para cada algoritmo}
+\label{cap-exp:tab:resultadosInstancias}
+\centering
+\begin{threeparttable}
+\begin{tabular}{|c|c||c|c|c|}
+\hline
+\multicolumn{1}{|c|}{\bf $\# lum$} &
+\multicolumn{1}{c||}{\bf $Alg.$} &
+\multicolumn{1}{c|}{\bf $min(F)$} &
+\multicolumn{1}{c|}{\bf $\mu(F)\pm \sigma$} &
+\multicolumn{1}{c|}{\bf $\mu(t)\pm \sigma$} \\ \hline
+2 lum & EA & $159$ & $172 \pm 10$ & $631 \pm 22$ \\
+2 lum & VNS & $\mathbf{157}$ & $\mathbf{160} \pm 3$ & $\mathbf{558} \pm 28$ \\\cline{1-5}
+3 lum & EA & $\mathbf{132}$ & $166 \pm 9$ & $956 \pm 29$ \\
+3 lum & VNS & $138$ & $\mathbf{154} \pm 11$ & $\mathbf{808} \pm 8$ \\\cline{1-5}
+4 lum & EA & $140$ & $163 \pm 11$ & $1,1$$\times$$10^{3}$$\pm$$35$ \\
+4 lum & VNS & $\mathbf{125}$ & $\mathbf{152} \pm 10$ & $\mathbf{1,0}$$\times$$\mathbf{10^{3}}$$\pm$$11$ \\\cline{1-5}
+\end{tabular}
+\end{threeparttable}
+\end{table}
+
+\begin{figure*}[!htp]
+\centering
+\begin{subfigure}[Media]
+{\includegraphics[width=0.49\linewidth, trim={0cm 0cm 0cm 0cm},clip]{./img/experimentos/algevo/resultadisInstanciasMedia}}
+\end{subfigure}
+\hfill
+\centering
+\begin{subfigure}[Mejor fitness]
+{\includegraphics[width=0.49\linewidth, trim={0cm 0cm 0cm 0cm},clip]{./img/experimentos/algevo/resultadisInstanciasMejorFitness}}
+\end{subfigure}
+\hfill
+\mbox{}
+\caption{\label{cap-exp:fig:resultadisInstancias}Resultados ejecuciones de instancias con 2, 3 y 4 luminarias. Eje de las ordenadas representa la suma, medida en watts, del consumo de las luminarias en la configuración.}
+\end{figure*}
+
+%---------------------------------------------------------------------------------------------------------------------------------
+\subsection{Test de Student}
+Dado el resultado del test de normalidad de Kolmogorov-Smirnov se puede realizar el test de Student a los
+resultados obtenidos por los algoritmos. En la Tabla~\ref{cap-exp:tab:ttest} se pueden ver los resultados
+de la prueba de Student aplicada a dos muestras (EA y VNS) para cada una de los tres casos evaluados
+en este reporte.
+
+\begin{table}[!htbp]
+\caption{Resultados de test de Student. $h$ = 1 indica que el test de Student no rechaza la hipótesis de que la distribución del VNS es peor que la obtenida para el algoritmo evolutivo, con un p-valor del 5\%. La columna $p$-valor muestra la probabilidad de que se cumpla dicha hipótesis.}
+\label{cap-exp:tab:ttest}
+\centering
+\begin{threeparttable}
+\begin{tabular}{|c|c|c|}
+\hline
+\multicolumn{1}{|c|}{\bf $\# lum$} &
+\multicolumn{1}{c|}{\bf $h$} &
+\multicolumn{1}{c|}{$p$-valor} \\ \hline
+%1 lum & 1 & $9,33 \times 10^{-42}$ \\
+2 lum & 1 & $4,17 \times 10^{-8}$ \\
+3 lum & 1 & $1,54 \times 10^{-5}$ \\
+4 lum & 1 & $1,07 \times 10^{-4}$ \\ \hline
+\end{tabular}
+\end{threeparttable}
+\end{table}
+
+De estos resultados es posible deducir que el algoritmo VNS da mejores resultados en todos los casos.
+
+%=================================================================
+\section{Caso de estudio, edificio Palacio de los Tribunales (Poder Judicial)}
+\label{sec-analisisExperimental:poderJ}
+En esta sección se estudia la aplicación del algoritmo en dos casos de estudio reales. El primer caso de estudio
+(realizado en la Sección~\ref{subsec-analisisExperimental:poderJActual}) busca optimizar la configuración
+encontrada actualmente en las oficinas del edificio Palacio de los Tribunales. Luego, en un segundo caso de estudio
+(realizado en la Sección~\ref{subsec-analisisExperimental:poderJExpertos}), se optimiza la configuración
+que es propuesta por los expertos en iluminación.
+El edificio Palacio de los Tribunales consta de cinco pisos y una planta baja. Los pisos poseen exactamente la misma
+geometría, por lo tanto para el estudio de la iluminación artificial alcanza con estudiar la iluminación en la planta
+baja (modelado con 9692 parches) y en alguno de los pisos (modelado con 14012 parches). Los planos de dichas
+áreas se pueden ver en la Figura~\ref{cap-exp:fig:poderJPlanos}.
+
+\begin{figure*}[!ht]
+\centering
+\begin{subfigure}[Planta baja]
+{\includegraphics[width=0.6\linewidth, trim={0cm 3cm 0cm 3cm}, clip]{./img/experimentos/PoderJPBSurfaces}\label{cap-exp:fig:poderJPlanosPB}}
+\end{subfigure}
+
+\begin{subfigure}[Quinto piso]
+{\includegraphics[width=0.6\linewidth, trim={1cm 1cm 1cm 1cm}, clip]{./img/experimentos/PoderJSurfaces}\label{cap-exp:fig:poderJPlanosP5}}
+\end{subfigure}
+\mbox{}
+\caption{\label{cap-exp:fig:poderJPlanos}Planos de las escenas a optimizar obtenidos por medio de informes de Dialux.}
+\end{figure*}
+
+Las escenas son pisos en un edificio de oficinas público para el cual su iluminación fue diseñada hace
+20 años haciendo uso de luminarias actualmente obsoletas. El surgimiento de la tecnología LED permite mejorar
+de manera sustancial la eficiencia energética de cualquier configuración, lo que resulta en grandes ahorros
+en edificios de este tipo. La mayoría de los edificios de oficinas hacen un uso intensivo de la iluminación artificial
+para satisfacer estándares de iluminación que permitan a sus ocupantes desempeñar actividades en condiciones
+óptimas.
+%---------------------------------------------------------------------------------------------------------------------------------
+\subsection{Optimización según valores de la configuración actual}
+\label{subsec-analisisExperimental:poderJActual}
+El principal objetivo de este experimento es comparar los resultados, en un caso de estudio real, con aquel propuesto
+por expertos en iluminación. Ambas configuraciones de luminarias intentan optimizar el uso de la energía. Se
+utilizan restricciones para que las configuraciones obtenidas tengan valores de iluminación similares, o mejores, a
+los actuales (no se pretende empeorar las condiciones de iluminación actuales en ningún sentido). Las geometrías
+de los pisos del edificio estudiado se pueden ver en las Figuras \ref{cap-exp:fig:poderJPlanos} y \ref{cap-exp:fig:poderJGeometry}. Los valores que se desean optimizar son calculados en las superficies de trabajo que están
+por encima del piso, a una altura de 0.8m.
+En el caso de la planta baja, la configuración se compone de 80 luminarias distribuidas en dos grupos,
+mientras que el quinto piso posee 120 luminarias distribuidas en 3 grupos (ver Figura~\ref{cap-exp:fig:poderJLuminaires}).
+Cabe destacar que se desea mantener dichos grupos de luminarias y que por lo tanto la posición de cada una de las
+luminarias está predeterminada. Por otra parte, no tiene sentido aplicar todas las rotaciones posibles. Solo se aplican
+rotaciones de a 90º en el eje vertical. 
+
+Las condiciones que se desean mantener o mejorar son: la cantidad de luz recibida (medida como la media de
+iluminancia) en la superficie, y la uniformidad de la iluminancia (medida como el mínimo valor de
+esta dividido por la media), para cada una de las superficies de trabajo estudiadas
+(Figura~\ref{cap-exp:fig:poderJPlanos}).
+Este cálculo de uniformidad es el que utiliza Dialux y es diferente al realizado en la Sección~\ref{sec-analisisExperimental:uniformidad}.
+Formalmente, para el quinto piso la optimización pude ser resumida como sigue:
+
+\begin{align}
+\label{cap-exp:eq:minimizationPublicBuilding}
+\min{36P_1 + 64P_2 + 20P_3},\hspace{0.2cm} 
+s.a.: 
+	\frac{I(A_j)_{min}}{I(A_j)_{media}} \geq \frac{I(A_j)^{actual}_{min}}{I(A_j)^{actual}_{media}}, \\ \nonumber
+	I(A_j)_{media} \geq I(A_j)^{actual}_{media}, \\ \nonumber
+	j \in \{1\ldots6\}
+\end{align}
+
+
+\noindent donde $P_{i}$ es el consumo eléctrico medido en watts de la i-ésima luminaria en la configuración
+e $I$ es el vector que contiene los valores de iluminancia para cada parche en cada superficie objeto de estudio
+$A_j$ (ver Figura~\ref{cap-exp:fig:poderJPlanos}).
+$I^{actual}$ son los valores de iluminancia para la configuración que se encuentra actualmente y que se busca
+mantener o mejorar por el algoritmo, $I_{min}$ es el mínimo valor de iluminancia en la superficie e $I_{media}$
+su valor medio. $I_{min}/I_{media}$ es la medida de que tan uniformemente distribuida se encuentra la iluminancia 
+en la superficie siendo estudiada.
+
+Por otro lado, la optimización para la planta baja pude ser resumida como sigue:
+
+\begin{align}
+\label{cap-exp:eq:minimizationPublicBuilding}
+\min{48P_1 + 32P_2},\hspace{0.2cm} 
+s.a.: 
+	\frac{I(PBA_j)_{min}}{I(PBA_j)_{media}} \geq \frac{I(PBA_j)^{actual}_{min}}{I(PBA_j)^{actual}_{media}}, \\ \nonumber
+	I(PBA_j)_{media} \geq I(PBA_j)^{actual}_{media}, \\ \nonumber
+	j \in \{1\ldots3\}
+\end{align}
+
+\noindent donde $PBA_j$ es una superficie en la planta baja.
+En ambos casos (planta baja y quinto piso), la optimización busca encontrar los mismos o mejores valores de 
+iluminancia que los encontrados actualmente en el edificio Palacio de los Tribunales, mejorando a su vez el consumo
+eléctrico.
+La cantidad máxima de iteraciones permitida es 25000.
+
+\begin{figure*}[!ht]
+\centering
+\begin{subfigure}[Planta baja]
+{\includegraphics[width=0.60\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/experimentos/PoderJPBGeometry}\label{cap-exp:fig:poderJGeometryPB}}
+\end{subfigure}
+
+\begin{subfigure}[Quinto piso]
+{\includegraphics[width=0.6\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/experimentos/PoderJGeometry}\label{cap-exp:fig:poderJGeometryP5}}
+\end{subfigure}
+\mbox{}
+\caption{\label{cap-exp:fig:poderJGeometry}Geometrías de los pisos del edificio Palacio de los Tribunales renderizadas con Dialux.}
+\end{figure*}
+
+\begin{figure*}[!ht]
+\centering
+\begin{subfigure}[Planta baja]
+{\includegraphics[width=0.6\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/experimentos/PoderJPBLuminaires}\label{cap-exp:fig:poderJLuminairesPB}}
+\end{subfigure}
+
+\begin{subfigure}[Quinto piso]
+{\includegraphics[width=0.6\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/experimentos/PoderJLuminaires}\label{cap-exp:fig:poderJLuminairesP5}}
+\end{subfigure}
+\mbox{}
+\caption{\label{cap-exp:fig:poderJLuminaires}Posición e identificador de grupo de cada luminaria. Existen dos grupos distintos de luminarias en la configuración de la planta baja y tres para el quinto piso.}
+\end{figure*}
+
+\begin{table}[!htbp]
+\footnotesize
+\caption{Resultados de la iluminación para la planta baja, medidos con Dialux para la configuración actual ($actual$), la propuesta por los expertos en iluminación ($expertos$) y la obtenida por el algoritmo ($algoritmo$). Los mejores valores se destacan con negritas, los valores que sean menores a los esperados (menores que los que se encuentran en la configuración actual, i.e., columna $actual$) son marcados con un asterisco.}
+\label{cap-exp:tab:publicBuildingResultsPB}
+\centering
+\begin{tabular}{ccccccc}\cline{1-7}
+\multicolumn{1}{|c}{\multirow{2}{*}{Superficie}} & 
+\multicolumn{3}{||c}{$I_m$ (lx)} & \multicolumn{3}{||c|}{$I_{min}/I_m$}\\ \cline{2-7}
+\multicolumn{1}{|c}{} & 
+\multicolumn{1}{||c}{$actual$} & \multicolumn{1}{|c}{$expertos$} & \multicolumn{1}{|c}{$algoritmo$} &
+\multicolumn{1}{||c}{$actual$} & \multicolumn{1}{|c}{$expertos$} & \multicolumn{1}{|c|}{$algoritmo$} \\ \cline{1-7}
+
+\multicolumn{1}{|c}{PB-A1} & 
+\multicolumn{1}{||c}{107} & \multicolumn{1}{|c}{219} & \multicolumn{1}{|c}{$\mathbf{343}$} & 
+\multicolumn{1}{||c}{0,71} & \multicolumn{1}{|c}{0,69*} & \multicolumn{1}{|c|}{$\mathbf{0,72}$} \\ \cline{1-7}
+
+\multicolumn{1}{|c}{PB-A2} & 
+\multicolumn{1}{||c}{152} & \multicolumn{1}{|c}{$\mathbf{313}$} & \multicolumn{1}{|c}{252} & 
+\multicolumn{1}{||c}{0,75} & \multicolumn{1}{|c}{0,64*} & \multicolumn{1}{|c|}{$\mathbf{0,83}$} \\ \cline{1-7}
+
+\multicolumn{1}{|c}{PB-A3} & 
+\multicolumn{1}{||c}{107} & \multicolumn{1}{|c}{218} & \multicolumn{1}{|c}{$\mathbf{341}$} & 
+\multicolumn{1}{||c}{0,69} & \multicolumn{1}{|c}{0,64*} & \multicolumn{1}{|c|}{$\mathbf{0,70}$} \\ \cline{1-7}
+\end{tabular}
+\end{table}
+
+\begin{table}[!htbp]
+\footnotesize
+\caption{Resultados de la iluminación para el quinto piso, medidos con Dialux para la configuración actual ($actual$), la propuesta por los expertos en iluminación ($expertos$) y la obtenida por el algoritmo ($algoritmo$). Los mejores valores se destacan con negritas, los valores que sean menores a los esperados (menores que los que se encuentran en la configuración actual, i.e., columna $actual$) son marcados con un asterisco.}
+\label{cap-exp:tab:publicBuildingResults}
+\centering
+\begin{tabular}{ccccccc}\cline{1-7}
+\multicolumn{1}{|c}{\multirow{2}{*}{Superficie}} & 
+\multicolumn{3}{||c}{$I_m$ (lx)} & \multicolumn{3}{||c|}{$I_{min}/I_m$}\\ \cline{2-7}
+\multicolumn{1}{|c}{} & 
+\multicolumn{1}{||c}{$actual$} & \multicolumn{1}{|c}{$expertos$} & \multicolumn{1}{|c}{$algoritmo$} &
+\multicolumn{1}{||c}{$actual$} & \multicolumn{1}{|c}{$expertos$} & \multicolumn{1}{|c|}{$algoritmo$} \\ \cline{1-7}
+
+\multicolumn{1}{|c}{A1} & 
+\multicolumn{1}{||c}{474} & \multicolumn{1}{|c}{348*} & \multicolumn{1}{|c}{$\mathbf{542}$} & 
+\multicolumn{1}{||c}{0,58} & \multicolumn{1}{|c}{$\mathbf{0,59}$} & \multicolumn{1}{|c|}{$\mathbf{0,59}$} \\ \cline{1-7}
+\multicolumn{1}{|c}{A2} & 
+\multicolumn{1}{||c}{$\mathbf{648}$} & \multicolumn{1}{|c}{537*} & \multicolumn{1}{|c}{623*} & 
+\multicolumn{1}{||c}{0,55} & \multicolumn{1}{|c}{0,49*} & \multicolumn{1}{|c|}{$\mathbf{0,57}$} \\ \cline{1-7}
+
+\multicolumn{1}{|c}{A3} & 
+\multicolumn{1}{||c}{398} & \multicolumn{1}{|c}{285*} & \multicolumn{1}{|c}{$\mathbf{436}$} & 
+\multicolumn{1}{||c}{0,54} & \multicolumn{1}{|c}{0,54} & \multicolumn{1}{|c|}{$\mathbf{0,56}$} \\ \cline{1-7}
+\multicolumn{1}{|c}{A4} & 
+\multicolumn{1}{||c}{661} & \multicolumn{1}{|c}{$\mathbf{670}$} & \multicolumn{1}{|c}{665} & 
+\multicolumn{1}{||c}{0,77} & \multicolumn{1}{|c}{0,61*} & \multicolumn{1}{|c|}{$\mathbf{0,78}$} \\ \cline{1-7}
+\multicolumn{1}{|c}{A5} & 
+\multicolumn{1}{||c}{$\mathbf{656}$} & \multicolumn{1}{|c}{544*} & \multicolumn{1}{|c}{627*} & 
+\multicolumn{1}{||c}{0,55} & \multicolumn{1}{|c}{0,48*} & \multicolumn{1}{|c|}{$\mathbf{0,57}$} \\ \cline{1-7}
+\multicolumn{1}{|c}{A6} & 
+\multicolumn{1}{||c}{473} & \multicolumn{1}{|c}{344*} & \multicolumn{1}{|c}{$\mathbf{533}$} & 
+\multicolumn{1}{||c}{0,57} & \multicolumn{1}{|c}{0,58} & \multicolumn{1}{|c|}{$\mathbf{0,59}$} \\ \cline{1-7}
+\end{tabular}
+\end{table}
+
+\begin{table}[!htbp]
+\footnotesize
+\caption{Resultados para la planta baja. Consumo eléctrico y ahorro obtenidos para la configuración actual ($actual$), la propuesta por los expertos ($expertos$) y la encontrada por el algoritmo ($algoritmo$). Los mejores valores se destacan con negritas.}
+\label{cap-exp:tab:publicBuildingPowerResultsPB}
+\centering
+\begin{threeparttable}
+\begin{tabular}{|c|c|c|c|}
+\cline{2-4}
+\multicolumn{1}{c|}{} &
+\multicolumn{1}{c|}{$actual$} &
+\multicolumn{1}{c|}{$expertos$} &
+\multicolumn{1}{c|}{$algoritmo$} \\ \hline
+Consumo eléctrico (W) & 5440 & 2240 & $\mathbf{1746}$ \\ \hline
+Ahorro energético (\%) & - & 58,8\% & $\mathbf{67,9\%}$ \\ \hline
+\end{tabular}
+\end{threeparttable}
+\end{table}
+
+\begin{table}[!htbp]
+\footnotesize
+\caption{Resultados para el quinto piso. Consumo eléctrico y ahorro obtenidos para la configuración actual (columna $actual$), la configuración propuesta por los expertos (columna $expertos$) y la configuración optima encontrada por el algoritmo (columna $algoritmo$). Los mejores valores son destacados con negrita.}
+\label{cap-exp:tab:publicBuildingPowerResults}
+\centering
+\begin{threeparttable}
+\begin{tabular}{|c|c|c|c|}
+\cline{2-4}
+\multicolumn{1}{c|}{} &
+\multicolumn{1}{c|}{$actual$} &
+\multicolumn{1}{c|}{$expertos$} &
+\multicolumn{1}{c|}{$algoritmo$} \\ \hline
+Consumo eléctrico (W) & 11664 & $\mathbf{3546}$ & 4011 \\ \hline
+Ahorro energético (\%) & 0\% & $\mathbf{69,6\%}$ & 65,6\% \\ \hline
+\end{tabular}
+\end{threeparttable}
+\end{table}
+
+En la Tabla~\ref{cap-exp:tab:publicBuildingPowerResultsPB} se exponen los resultados para la planta baja. Dicha tabla
+muestra los resultados de iluminación obtenidos para cada configuración. Como se puede observar, la configuración
+propuesta por los expertos no mantiene ni mejora los valores actuales de uniformidad pero si mantiene
+los niveles de iluminancia media. Por otro lado, la configuración encontrada por el algoritmo sí mantiene o mejora
+tanto los niveles medios de iluminancia como también su uniformidad.
+Además la Tabla~\ref{cap-exp:tab:publicBuildingPowerResultsPB} muestra el ahorro energético obtenido
+con cada una de las configuraciones (medido como el porcentaje de watts ahorrados por las nuevas configuraciones
+con respecto a la existente en la actualidad). De esta última tabla es posible concluir que la configuración propuesta
+por el algoritmo es la que retorna los mejores niveles de ahorro energético, existiendo un ahorro de cerca de
+$9\%$ más que la configuración propuesta por los expertos.
+A partir de los datos de ambas tablas es posible concluir que la configuración planteada por el algoritmo es mejor
+que la propuesta por los expertos, ya que es capaz de mantener o mejorar los niveles actuales de iluminación
+a la vez que mejora el ahorro energético.
+
+Por otro lado, para el quinto piso tenemos la Tabla~\ref{cap-exp:tab:publicBuildingResults} donde se muestran
+los resultados de iluminación obtenidos para cada configuración. En este caso, la propuesta de los expertos no cumple
+las restricciones de mantener o mejorar la iluminación media y la uniformidad. Por otra parte, el algoritmo retorna
+valores que siempre mejoran la uniformidad de la luz en cada una de las superficies estudiadas, y brinda buenos
+valores de iluminancia media (solo dos superficies tienen valores levemente inferiores a las actuales).
+
+La Tabla~\ref{cap-exp:tab:publicBuildingPowerResults} muestra el ahorro energético para el quinto piso. Donde se
+puede ver que la propuesta de los expertos es la que retorna los valores de consumo eléctrico.
+
+Los resultados obtenidos en ambas tablas (\ref{cap-exp:tab:publicBuildingResults} y \ref{cap-exp:tab:publicBuildingPowerResults})
+no permiten sacar conclusiones concretas. Esto es debido a que sí bien la propuesta realizada
+por los expertos es la que retorna los mejores valores en cuanto al consumo eléctrico, empeora los niveles de
+iluminación que se encuentran actualmente en el edificio. Esta relajación de las restricciones no es realizada por el
+algoritmo, lo que lleva a que este no considere como válidas soluciones similares a las propuestas por los expertos. Queda por tanto conocer si estableciendo como restricciones los valores de iluminación alcanzados por la
+propuesta realizada por los expertos, el algoritmo es capaz de obtener una mejor eficiencia
+energética. Este experimento se desarrolla en la Sección~\ref{subsec-analisisExperimental:poderJExpertos}.
+
+\subsubsection{Luminarias seleccionadas en cada configuración}
+A continuación se muestran los nombres y códigos de las luminarias utilizadas en cada configuración.
+
+\paragraph{Planta baja:} \hfill \break
+
+Luminaria actuales
+\begin{itemize}[leftmargin=.7in]
+\item Grupo 1: LUMENAC S.A. OT6769P6.ASC (código = OT6769P6.ASC)
+\item Grupo 2: LUMENAC S.A. OT6769P6.ASC (código = OT6769P6.ASC)
+\end{itemize}
+
+Configuración propuesta por los expertos
+\begin{itemize}[leftmargin=.7in]
+\item Grupo 1: FLOS 03.6610.3B L-SUPLY FIX BLN 4000K CRI80 (código = 03.6610.3B)
+\item Grupo 2: FLOS 03.6610.3B L-SUPLY FIX BLN 4000K CRI80 (código = 03.6610.3B)
+\end{itemize}
+
+Luminarias seleccionadas en la configuración por el algoritmo
+\begin{itemize}[leftmargin=.7in]
+\item Grupo 1: CREE CR-LE-40LHE-30K-XXX Troffer 3000K No Trim (código = CR-LE-40LHE-30K-XXX )
+\item Grupo 2: Cree Inc LR6-10L-40K-GU24 Downlight with White Aluminum Housing and Diffuse Lens (código =LR6-10L-40K-GU24)
+\end{itemize}
+
+\paragraph{Quinto piso:} \hfill \break
+
+Luminaria actuales:
+\begin{itemize}[leftmargin=.7in]
+\item Grupo 1: LUMENAC S.A. Embutido bajo consumo, con aro en policarbonato blanco y reflector de policarbonato metalizado 210-126 (código = Embutido bajo consumo, con aro en policarbonato blanco y reflector de policarbonato metalizado)
+\item Grupo 2: LUMENAC S.A. OFFICE C336 PS-90 Lum.p/embutir, reflector aluminio anodizado, con louver parabolico simple satinado economico (código = OFFICE C336 PS-90)
+\item Grupo 3: LUMENAC S.A. OT6769P5.ASC Ensayo Fotometrico (código = \\ OT6769P5.ASC)
+\end{itemize}
+
+Luminarias en la configuración propuesta por los expertos
+\begin{itemize}[leftmargin=.7in]
+\item Grupo 1: Disano Illuminazione SpA 841 3x led CLD CELLE 841 Minicomfort LED x3 -UGR<16 (código = 841 3x led CLD CELL-E)
+\item Grupo 2: FLOS 03.6610.3B L-SUPLY FIX BLN 4000K CRI80 (código = 03.6610.3B)
+\item Grupo 3: FLOS N70D114GA IN-FINITY 70 L=1125 SUSPENSION DOWN GENERAL LIGHTING (código = N70D114GA)
+\end{itemize}
+
+Luminarias seleccionadas en la configuración por el algoritmo
+\begin{itemize}[leftmargin=.7in]
+\item Grupo 1: CREE CR-LE-40LHE-30K-XXX Troffer 3000K No Trim (código = CR-LE-40LHE-30K-XXX)
+\item Grupo 2: Cree Inc FP24-50L-35K-10V 2'X4' flat panel fixture consisting of a white metal frame, a diffusion panel, and a light guide. (código = FP24-50L-35K-10V)
+\item Grupo 3: Cree Inc LR6-10L-27K-GU24 Downlight with White Aluminum Housing and Diffuse Lens (código = LR6-10L-27K-GU24)
+\end{itemize}
+%---------------------------------------------------------------------------------------------------------------------------------
+\subsection{Optimizado de configuración propuesta por los expertos}
+\label{subsec-analisisExperimental:poderJExpertos}
+A partir de los resultados obtenidos en el experimento presentado en la Sección~\ref{subsec-analisisExperimental:poderJActual}
+se puede ver que en el caso del quinto piso los expertos relajan algunas de las restricciones de iluminación, con el
+objetivo de mejorar el consumo eléctrico de la configuración resultante. Sin embargo, dicha relajación no es
+aprovechada por el algoritmo, que se limita a cumplir las restricciones de forma estricta. Sospechamos que esa es la
+principal causa de que la solución encontrada por el algoritmo sea energéticamente menos eficiente. Por esta causa se
+desarrolló este experimento que busca optimizar la configuración planteada por los expertos utilizando los valores de
+la misma en lugar de los valores en la configuración actual.
+En este experimento se optimiza la superficie de trabajo que está por encima del piso a una altura de 0.8m,
+y se realiza un número máximo de 25000 iteraciones.
+
+\begin{table}[!htbp]
+\footnotesize
+\caption{Tabla que contiene los resultados de iluminación, medidos por medio de Dialux, para la propuesta de los expertos ($expertos$) y la encontrada por medio del algoritmo ($algoritmo$) partiendo de la configuración planteada por los expertos. Los mejores valores obtenidos para cada fila son destacados con letra negrita, aquellos valores que resulten inferiores a los esperados (aquellos menores a los de la columna $expertos$) son destacados con un asterisco.}
+\label{cap-exp:tab:publicBuildingFromExpertsResults}
+\centering
+\begin{tabular}{ccccc}\cline{1-5}
+\multicolumn{1}{|c}{\multirow{2}{*}{Superficie}} & 
+\multicolumn{2}{||c}{$I_m$ (lx)} & \multicolumn{2}{||c|}{$I_{min}/I_m$}\\ \cline{2-5}
+\multicolumn{1}{|c}{} & 
+\multicolumn{1}{||c}{$expertos$} & \multicolumn{1}{|c}{$algoritmo$} &
+\multicolumn{1}{||c}{$expertos$} & \multicolumn{1}{|c|}{$algoritmo$} \\ \cline{1-5}
+
+\multicolumn{1}{|c}{A1} & 
+\multicolumn{1}{||c}{$\mathbf{348}$} & \multicolumn{1}{|c}{$\mathbf{348}$} & 
+\multicolumn{1}{||c}{$\mathbf{0.59}$} & \multicolumn{1}{|c|}{$\mathbf{0.59}$} \\ \cline{1-5}
+\multicolumn{1}{|c}{A2} & 
+\multicolumn{1}{||c}{537} & \multicolumn{1}{|c}{$\mathbf{543}$} & 
+\multicolumn{1}{||c}{$\mathbf{0.49}$} & \multicolumn{1}{|c|}{$\mathbf{0.49}$} \\ \cline{1-5}
+
+\multicolumn{1}{|c}{A3} & 
+\multicolumn{1}{||c}{$\mathbf{285}$} & \multicolumn{1}{|c}{$\mathbf{285}$} & 
+\multicolumn{1}{||c}{$\mathbf{0.54}$} & \multicolumn{1}{|c|}{$\mathbf{0.54}$} \\ \cline{1-5}
+\multicolumn{1}{|c}{A4} & 
+\multicolumn{1}{||c}{670} & \multicolumn{1}{|c}{$\mathbf{676}$} & 
+\multicolumn{1}{||c}{$\mathbf{0.61}$} & \multicolumn{1}{|c|}{0,60*} \\ \cline{1-5}
+\multicolumn{1}{|c}{A5} & 
+\multicolumn{1}{||c}{544} & \multicolumn{1}{|c}{$\mathbf{549}$} & 
+\multicolumn{1}{||c}{$\mathbf{0,48}$} & \multicolumn{1}{|c|}{$\mathbf{0,48}$} \\ \cline{1-5}
+\multicolumn{1}{|c}{A6} & 
+\multicolumn{1}{||c}{$\mathbf{344}$} & \multicolumn{1}{|c}{$\mathbf{344}$} & 
+\multicolumn{1}{||c}{$\mathbf{0,58}$} & \multicolumn{1}{|c|}{$\mathbf{0,58}$} \\ \cline{1-5}
+\end{tabular}
+\end{table}
+
+\begin{table}[!htbp]
+\footnotesize
+\caption{Consumo eléctrico y ahorro obtenidos por las configuraciones en relación a la existente en el edificio Palacio de los Tribunales ($actual$), la configuración propuesta por los expertos ($expertos$) y la configuración optima obtenida por el algoritmo ($algoritmo$) utilizando la solución planteada por los expertos como punto de partida y buscando mejorarla. La mejor solución es destacada con letra negrita.}
+\label{cap-exp:tab:publicBuildingFromExpertsPowerResults}
+\centering
+\begin{threeparttable}
+\begin{tabular}{|c|c|c|c|}
+\cline{2-4}
+\multicolumn{1}{c|}{} &
+\multicolumn{1}{c|}{$actual$} &
+\multicolumn{1}{c|}{$expertos$} &
+\multicolumn{1}{c|}{$algoritmo$} \\ \hline
+Consumo eléctrico (W) & 11664 & 3546 & $\mathbf{3041}$ \\ \hline
+Ahorro energético (\%) & 0\% & 69,6\% & $\mathbf{73.9\%}$ \\ \hline
+\end{tabular}
+\end{threeparttable}
+\end{table}
+
+La Tabla~\ref{cap-exp:tab:publicBuildingFromExpertsResults} muestra los resultados en la iluminación obtenidos
+para cada una de las configuraciones. Como se puede observar, la configuración encontrada por el algoritmo obtiene
+prácticamente los mismos resultados en la iluminación que los resultados obtenidos por la configuración propuesta por
+los expertos.
+Por otro lado la Tabla~\ref{cap-exp:tab:publicBuildingFromExpertsPowerResults} muestra que la configuración
+encontrada por el algoritmo mejora el consumo eléctrico en casi un $4\%$.
+De los resultados es posible observar que, con las nuevas restricciones usadas, el algoritmo es capaz de mejorar la
+configuración propuesta por los expertos, obteniendo una valor $14\%$ menor con un ahorro energético casi $4\%$
+mayor con respecto a la configuración actual. Además la configuración resultante tiene valores prácticamente idénticos
+a la propuesta realizada por los expertos.
+
+\subsubsection{Luminarias seleccionadas en la nueva configuración del quinto piso}
+Los tipos de luminaria seleccionados en esta nueva configuración son como siguen:
+
+\begin{itemize}[leftmargin=.7in]
+\item Grupo 1: Disano Illuminazione SpV 841 3x led CLD CELL-D-D-E 841 Minicomfort LED x3 -UGR $<$ 16 (código = 841 3x led CLD CELL-D-D-E).
+\item Grupo 2: ERCO GmbH 32001000\_V01 Quintessence Downlight (código = 32001000\_V01).
+\item Grupo 3: FLOS N70D114GA IN-FINITY 70 L=1125 SUSPENSION DOWN GENERAL LIGHTING (código = N70D114GA).
+\end{itemize}
+%=================================================================
+% end of chapter

@@ -1,0 +1,511 @@
+%!TeX encoding = ISO-8859-1
+
+\appendix
+\setcounter{chapter}{-1}
+\chapter{Técnicas de evaluación paralela para la metaheurística VNS} \label{anexoALN}
+\renewcommand{\thechapter}{A}
+
+
+%=================================================================
+\section{Introducción}
+En este anexo se estudia la aceleración de la resolución de problemas ILP en el caso de utilizar una aproximación
+de bajo rango de la matriz de radiosidad, y la búsqueda del óptimo por medio de la utilización del método VNS. En
+este contexto, el cálculo de la radiosidad es realizado a partir del producto secuencial del vector que está siendo
+evaluado con la matriz que contiene los datos de la escena, obteniéndose así un candidato a solución del problema,
+$B_i$ = $\mathbf{M}E_i$ (donde $\mathbf{M} = (\mathbf{I}-\mathbf{RF})^{-1}$). Por lo que se estudiará el hecho de que
+dicha secuencia de productos puede ser reducida a una única multiplicación matriz-matriz $\mathbf{B} = \mathbf{ME}$,
+donde $\mathbf{B}$ = $\irow{B_1&B_2&...&B_n}$, $\mathbf{E}$ = $\irow{E_1&E_2&...&E_n}$. Si bien la
+cantidad de operaciones de punto flotante resulta ser la misma en ambos casos, se tiene que el producto
+matriz-vector es más lento debido a que la tasa de transferencia entre la memoria y CPU degrada el desempeño
+general del cálculo. Este tipo de aceleración es útil cuando es necesario realizar los cálculos en un computador
+solamente, sin tener acceso a GPUs o a un clúster de ordenadores para realizar los cálculos de forma paralela.
+Por medio de esta aceleración se logra aprovechar mejor los recursos de
+CPU, memoria y cache en beneficio de los tiempos de respuesta del algoritmo.
+
+También se estudiará la aplicación de la técnica de Clearing (Petrowski~\cite{Petrowski1996}) para mejorar la
+diversidad en las soluciones obtenidas.
+Esto es interesante para brindar variedad de buenas y diferentes soluciones a los diseñadores.
+
+%=================================================================
+\section{Trabajo relacionado}
+Un ejemplo de aplicación de estas técnicas para la mejora de los resultados obtenidos por el algoritmo VNS es el
+realizado por T. Davidovi\'c and T. Craini~\cite{Davidovic2013} donde proponen varias estrategias de paralelización, utilizando una arquitectura multiprocesador, logrando mejorar tanto la calidad de los resultados
+como los tiempos totales de ejecución de los algoritmos, en comparación a un VNS sin técnicas de paralelización
+aplicadas.
+
+Por otro lado la optimización multimodal es el conjunto de técnicas enfocadas en la búsqueda de múltiples óptimos
+globales y locales en oposición a la búsqueda de un único óptimo global. 
+Su motivación se basa en que el conocimiento de varios óptimos.
+El conocimiento de múltiples buenas soluciones (óptimos locales o globales) es útil en ingeniería, especialmente cuando el
+costo o restricciones de obtener el óptimo global lo hacen inviable. En dicho escenario, si se conocen múltiples
+soluciones (local y o globalmente óptimas), la implementación puede cambiarse rápidamente a otra solución y
+obtener el mejor rendimiento posible \cite{Wong2012}.
+Mediante las técnicas de Algoritmos Evolutivos es posible obtener múltiples soluciones mediante la simulación
+de una población, en oposición a los métodos convencionales que requieren reiniciar la búsqueda o realizar
+múltiples ejecuciones. Las técnicas de optimización evolutiva, conocidas como técnicas de ``\textit{niching}''
+(nicho), han sido desarrolladas en las últimas décadas para la localización de óptimos locales y globales. Dichas
+técnicas pueden ser incorporadas a Algoritmos Evolutivos para lograr mantener múltiples subpoblaciones dentro de
+una población objetivo logrando así localizar múltiples óptimos globales o locales de manera simultánea.
+Para realizar la búsqueda multimodal de soluciones, las técnicas de nicho conducen la búsqueda a distintas
+áreas en el espacio de búsqueda, con el objetivo de que estas converjan a distintos picos (óptimos)
+simultáneamente.
+Como resultado se mantienen diversas subpoblaciones dentro de la población general \cite{Das2011}.
+Las técnicas de nicho pueden ser clasificadas según las siguientes cuatro categorías:
+\begin{enumerate}
+\item Secuencial: aquellas que localizan los nichos de manera iterativa.
+\item Paralela: aquellas que localizan todos los nichos de forma paralela.
+\item Cuasi secuencial: aquellas que localizan los nichos de manera secuencial y realizan la búsqueda de nuevos
+nichos de forma paralela mientras que los actuales son mantenidos.
+\item Jerárquica: es una versión híbrida entre las técnicas secuencial y paralela diseñada para sobreponer las
+limitantes de la primera.
+\end{enumerate}
+
+Aquí analizamos el uso de estas técnicas a los resultados de una población retornada por la ejecución
+paralela de múltiples VNSs.
+
+En este anexo también se utiliza la técnica de Clearing, introducida por Petrowski~\cite{Petrowski1996} para
+mantener la diversidad de las configuraciones de iluminación obtenidas. Esto permite ofrecer un conjunto de
+buenas y diferentes soluciones, que cumplen las LIs.
+Esta técnica se basa en el concepto de la competencia por la obtención de recursos limitados de un entorno,
+por una subpoblación dada, eliminando así dentro de cada nicho los individuos menos aptos.
+
+El estudio realizado en este Anexo es parte del trabajo realizado en Decia~\cite{Decia2017}. Aquí solo se reportan
+los resultados obtenidos en la ejecución en CPU.
+
+%=================================================================
+\section{Propuestas de optimización}
+
+En esta sección se describen las propuestas de ejecución paralela que serán evaluadas en el resto del anexo.
+Estas técnicas buscan aprovechar el uso del producto matriz-matriz, antes mencionado, con el objetivo de
+aumentar el desempeño computacional de la metaheurística VNS. Las distintas propuestas explotan distintas
+formas de agrupar en una matriz los vectores de emisión, en distintos pasos del algoritmo VNS.
+
+%---------------------------------------------------------------------------------------------------------------------------------
+\subsection{Múltiples ejecuciones de la metaheurística VNS (N-VNS)}
+
+En la propuesta de evaluación paralela de N instancias de VNS (algoritmo que llamaremos N-VNS de aquí en más) se
+convierte el producto matriz-vector en un producto matriz-matriz. La nueva matriz armada contiene el vector,
+para el paso actual, de cada una de las N instancias de la metaheurística VNS que se están evaluando en paralelo.
+Por lo tanto en esta propuesta se realiza el cálculo de N ejecuciones de la metaheurística VNS que corren sus pasos
+al mismo tiempo, donde en cada producto matriz-matriz se calculan los resultados de la evaluación de un miembro
+del vecindario para cada una de las instancias del VNS que se calculan en simultáneo (Figura \ref{anexoALN:fig:VNS-paralelo}).
+
+\begin{figure}[!htbp]
+\centering
+\fbox{\includegraphics[width=0.65\textwidth, trim={0cm 0cm 0cm 0cm}, clip]{./anexos/imgs/aln/VNS_paralelo.pdf}}
+\caption{Imagen mostrando agrupación de emisiones para algoritmo N-VNS. Cálculo de emisión total de la escena en el algoritmo que corre varias instancias del VNS que se calculan
+en simultáneo. Cada i-ésimo vector corresponde al i-ésimo VNS. La matriz $\mathbf{M}$ es fija, no varía durante todo el proceso de cálculo.}
+\label{anexoALN:fig:VNS-paralelo}
+\end{figure}
+
+Este tipo de evaluación puede resultar interesante ya que el método puede no llegar siempre a la solución óptima.
+Dependerá de la cantidad de ejecuciones. Es posible que se tengan varios óptimos o que estos sean numéricamente cercanos pero muy diferentes en cuanto a su resultado, es decir la configuración de la iluminación
+será tan buena numérica o matemáticamente pero a su vez diferente en cuanto a la iluminación producida o cómo es esta
+producida (dando mayor cantidad de soluciones al diseñador el cual tendrá mayor flexibilidad a la hora de
+seleccionar la solución a utilizar). Es importante comprender que no siempre es bueno conocer la solución óptima
+sino que puede ser útil conocer un conjunto de buenas soluciones. Por lo tanto, acelerar el proceso de ejecución de
+varias instancias del algoritmo que corran con distintos estados iniciales puede resultar muy interesante en la
+práctica.
+
+%---------------------------------------------------------------------------------------------------------------------------------
+\subsection{Múltiple cálculo de vecinos (VNS-EV)}
+
+La metaheurística VNS se caracteriza por realizar la exploración de un vecindario seleccionando un grupo reducido
+de candidatos al azar dentro del mismo. Debido a esto, es interesante estudiar los beneficios de realizar el cálculo
+de todos los miembros seleccionados del vecindario en un solo producto matriz-matriz. Llamamos a este algoritmo
+VNS-EV de aquí en más. Por lo tanto en esta propuesta se toman los datos de todos los miembros (seleccionados)
+del vecindario y luego se calcula el producto como se muestra en la Figura~\ref{anexoALN:fig:VNS_exploracion_vec}.
+Una vez obtenidos los resultados estos se evalúan buscando entre ellos un resultado mejor. Cabe destacar que en
+este caso es conveniente realizar un cambio de comportamiento en el algoritmo VNS, debido a que en la forma
+secuencial, al encontrarse un valor mejor que el actual, el VNS se detiene (terminando la búsqueda en el
+vecindario actual y reiniciando en el vecindario inicial).
+Sin embargo, esta nueva propuesta termina de analizar todo el vecindario ya que el cálculo más costoso (el
+producto matriz-matriz) ya fue realizado, y buscar el menor valor del conjunto resultante es, en comparación,
+computacionalmente despreciable. Además, dado que calcula todas las soluciones, este proceso podría aumentar
+las posibilidades de encontrar una mejor solución.
+
+\begin{figure}[!htbp]
+\centering
+\fbox{\includegraphics[width=0.65\textwidth, trim={0cm 0cm 0cm 0cm}, clip]{./anexos/imgs/aln/VNS_exploracion_vec.pdf}}
+\caption{Imagen mostrando agrupación de emisiones para algoritmo VNS-EV. Cálculo de emisión de la escena en algoritmo que calcula todos los elementos de un vecindario utilizando el producto matriz-matriz, cada i-ésimo vector representa un miembro del vecindario que se está evaluando.}
+\label{anexoALN:fig:VNS_exploracion_vec}
+\end{figure}
+
+\subsection{Múltiples ejecuciones de VNS con múltiple cálculo de vecinos (N-VNS+EV)}
+
+Una última propuesta que resulta interesante explorar es aquella donde se combinen ambas técnicas anteriores. Por lo tanto se plantea la realización de un tercer algoritmo que aplique en cada producto matriz-matriz los pasos
+de N-VNS que se calculan en simultáneo y que para cada uno de estos calcule además todos los elementos del
+vecindario que esté analizando, ver Figura \ref{anexoALN:fig:VNS_exploracion_vec_y_paralelo}. Llamamos a esta
+técnica N-VNS+EV.
+
+\begin{figure}[!htbp]
+\centering
+\fbox{\includegraphics[width=0.65\textwidth, trim={0cm 0cm 0cm 0cm}, clip]{./anexos/imgs/aln/VNS_exploracion_vec_y_paralelo.pdf}}
+\caption{Imagen mostrando agrupación de emisiones para algoritmo N-VNS+EV. Cálculo de emisión total de la escena en algoritmo que calcula todos los elementos de un vecindario y a su vez múltiples VNS que se calculan en simultáneo utilizando un único producto matriz-matriz. Cada elemento resultado del i-ésimo VNS es una matriz que contiene un vector por cada miembro del vecindario que esté siendo evaluado.}
+\label{anexoALN:fig:VNS_exploracion_vec_y_paralelo}
+\end{figure}
+
+%=================================================================
+\section{Evaluación Experimental}
+\label{anexoALN:sec:evaluacion_experimental}
+
+En esta sección se describen y analizan los resultados obtenidos en la aplicación de las propuestas comentadas
+anteriormente, mostrando los tiempos de ejecución de cada algoritmo, calculando el aumento de velocidad
+obtenido (o $speedup$ en inglés, que es calculado como $S_N = T_1/T_n$), y comparando frente al algoritmo
+de VNS simple que realiza el cálculo utilizando productos matriz-vector (que llamaremos de aquí en más VNS
+simple). Además se realizará una evaluación de los resultados obtenidos en la optimización para cada uno de los
+algoritmos.
+
+Todos los algoritmos en los experimentos realizados realizan el cálculo de la iluminación utilizando emisores
+lambertianos cuya emisión es determinada por el conjunto de parches el algoritmo seleccione.
+
+%---------------------------------------------------------------------------------------------------------------------------------
+\subsection{Escena, datos y hardware utilizados, restricciones y objetivos}
+
+El hardware utilizado para realizar la evaluación es el siguiente: Intel(R) Core(TM) i7-3770 CPU @ 3.40 Ghz y
+16GB RAM.
+La escena elegida para realizar la evaluación es la Cornell Box \cite{Goral1984}, utilizada para el análisis de
+renderización. La representación de dicha escena contiene 9216 polígonos, ver Figura~\ref{anexoALN:fig:cornellbox}.
+Para la misma se tiene como objetivo la búsqueda de dos conjuntos de parches emisores que causen la mayor
+iluminación posible, o sea que la sumatoria de la iluminación recibida en cada parche (o polígono) de la escena sea
+lo mayor posible, y que se cumpla con las restricciones siguientes:
+\begin{itemize}
+\item El área de la suma de cada uno de los parches en cada conjunto emisor (que iluminan la escena) no es mayor a 0,5m.
+\item Los parches de cada conjunto emisor (que iluminan la escena) están contenidos en el plano horizontal superior (en el techo) de la escena.
+\end{itemize}
+
+En base a este conjunto de objetivos y restricciones se hace el análisis de los resultados.
+
+\begin{figure}[!htbp]
+\centering
+\fbox{\includegraphics[width=0.55\textwidth, trim={0cm 0cm 0cm 0cm}, clip]{./anexos/imgs/aln/EscenaWireFrames.png}}
+\caption{Escena utilizada para experimentos sobre técnicas de evaluación paralela para la metaheurística VNS. Cornell Box 9216 polígonos.}
+\label{anexoALN:fig:cornellbox}
+\end{figure}
+
+%---------------------------------------------------------------------------------------------------------------------------------
+\subsection{Múltiples ejecuciones de VNS (N-VNS)}
+
+Para el caso de la ejecución en simultáneo de N instancias del algoritmo VNS se obtuvieron los datos presentados
+en la Tabla~\ref{anexoALN:table:test-table-VNS-parallel}. Donde se puede notar que el algoritmo que ejecuta el
+cálculo de N-VNS como un producto matriz-matriz comienza con un aumento de velocidad de 2,6 con
+respecto al algoritmo simple si se lo corriese N veces en el caso de 10 instancias en paralelo, y que a medida que
+se incrementa la cantidad de VNS a calcular el aumento de velocidad tiende a mejorar, alcanzando el valor 4,8 para
+100 instancias. La mejora del tiempo de ejecución se puede notar fácilmente en el gráfico presentado en la Figura~\ref{anexoALN:fig:T_ejec_parallel_VNS},
+el aumento de velocidad obtenido puede ser consultado en la Figura~\ref{anexoALN:fig:Speedup_parallel_VNS}, acercándose a 5 cuando 100 instancias de VNS son calculadas en simultáneo, tendiendo a desacelararse y
+estancarse en un valor cercano a 5.
+
+\begin{table*}[!htbp]
+\centering
+\begin{tabular}{|l|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+\multicolumn{1}{|c|}{Cantidad de VNS} & 1 & 10 & 20 & 40 & 60 & 80 & 100 \\ \hline
+VNS simple & 42,8 s & 428s & 856s & 1712s & 2568s & 3424s & 4280s \\ \hline
+N-VNS & 46,8 s & 163,2 s & 250,6 s & 420,3 s & 588,8 s & 747,3 s & 880,4 s \\ \hline
+Speedup & 0,9 & 2,6 & 3,4 & 4,1 & 4,4 & 4,6 & 4,9 \\ \hline
+\end{tabular}
+\caption{Datos generados para algoritmo simple y N-VNS que se calculan en simultáneo, tomando 15000 iteraciones.}
+\label{anexoALN:table:test-table-VNS-parallel}
+\end{table*}
+
+\begin{figure*}[!ht]
+\centering
+\begin{subfigure}[Tiempo de ejecución de algoritmo simple de VNS comparado con N instancias de VNS utilizando producto matriz-matriz.]
+{\includegraphics[width=0.49\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./anexos/imgs/aln/T_ejec_parallel_VNS.pdf}\label{anexoALN:fig:T_ejec_parallel_VNS}}
+\end{subfigure}
+\begin{subfigure}[Aumento de velocidad calculado para la ejecución de N ejecuciones de VNS en simultáneo utilizando producto matriz-matriz en comparación con algoritmo simple ejecutado N cantidad de veces.]
+{\includegraphics[width=0.49\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./anexos/imgs/aln/Speedup_parallel_VNS.pdf}\label{anexoALN:fig:Speedup_parallel_VNS}}
+\end{subfigure}
+\caption{Gráficos con tiempos de los algoritmos de VNS simple y N-VNS, y aumento de velocidad del algoritmo N-VNS frente al VNS simple.}
+\end{figure*}
+
+%---------------------------------------------------------------------------------------------------------------------------------
+\subsection{Múltiple cálculo de vecinos (VNS-EV)}
+
+Para el caso de la ejecución de todo el vecindario en un solo producto matriz-matriz se obtuvieron los datos
+presentados en la Tabla~\ref{anexoALN:table:test-table-exp-vec}. Donde se puede notar que el algoritmo que
+ejecuta el cálculo del vecindario completo comienza con un aumento de velocidad de 2,6 frente al algoritmo
+simple, y que a  medida que se aumenta el tamaño del vecindario a analizar se tiende a consumir una porción del
+tiempo menor, alcanzando un aumento de velocidad de 3,3 para un vecindario inicial con 1000 estados. Esto
+mismo se ve reflejado en el gráfico presentado en la Figura \ref{anexoALN:fig:T_ejec_exp_vec}. Por otro lado el
+aumento de velocidad obtenido puede ser consultado en la Figura \ref{anexoALN:fig:Speedup_exp_vec},
+acercándose a un aumento de velocidad de 3,5 con vecindarios de tamaño inicial igual a 1000 y donde se puede
+notar que el aumento de velocidad se estanca en un valor cercano a 3,3.
+
+\begin{table*}[!htbp]
+\centering
+\begin{tabular}{|l|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+\multicolumn{1}{|c|}{Tamaño del vecindario}
+& 50 & 100 & 200 & 400 & 600 & 800 & 1000 \\ \hline
+VNS simple & 42,8 s & 42,0 s & 41,4 s & 41,6 s & 41,6 s & 42,2 s & 41,9 s \\ \hline
+VNS-EV & 16,3 s & 15,5 s & 14,5 s & 13,1 s & 12,9 s & 12,7 s & 12,6 s \\ \hline
+Speedup & 2,6 & 2,7 & 2,9 & 3,2 & 3,2 & 3,3 & 3,3 \\ \hline
+\end{tabular}
+\caption{Datos generados para algoritmo simple y VNS-EV, tomando 15000 iteraciones.}
+\label{anexoALN:table:test-table-exp-vec}
+\end{table*}
+
+\begin{figure*}[!ht]
+\centering
+\begin{subfigure}[Aumento de velocidad calculado para el cálculo del algoritmo N-VNS en comparación con algoritmo simple ejecutado N cantidad de veces.]
+{\includegraphics[width=0.49\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./anexos/imgs/aln/T_ejec_exp_vec.pdf}\label{anexoALN:fig:T_ejec_exp_vec}}
+\end{subfigure}
+\begin{subfigure}[Aumento de velocidad calculado para el cálculo completo de todos los elementos del vecindario seleccionados en un solo producto matriz-matriz.]
+{\includegraphics[width=0.49\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./anexos/imgs/aln/Speedup_exp_vec.pdf}\label{anexoALN:fig:Speedup_exp_vec}}
+\end{subfigure}
+\caption{Gráficos con tiempos de los algoritmos de VNS simple y VNS-EV, y aumento de velocidad del algoritmo VNS-EV frente al VNS simple.}
+\end{figure*}
+
+%---------------------------------------------------------------------------------------------------------------------------------
+\subsection{Múltiples ejecuciones de VNS con múltiple cálculo de vecinos (N-VNS+EV)}
+\label{subsec:test-sect2}
+
+Para este último caso es conveniente realizar la comparación frente al algoritmo que calcula múltiples ejecuciones
+de VNS (N-VNS) y no, como en los análisis anteriores, contra el algoritmo simple. Esto es debido a que se intenta
+evaluar cuánto mejora el tiempo de ejecución del mismo al agregar el cálculo simultáneo de todo el vecindario.
+Por lo tanto para esta evaluación se corrió el algoritmo mezclando distintos tipos de tamaño de vecindario para
+distinta cantidad de instancias de VNS, ver Tabla \ref{anexoALN:table:test-table-VNS-exp_vec_and_parallel}.
+
+\begin{table}[!htbp]
+\centering
+\begin{tabular}{|l|c|c|c|c|c|}
+\hline
+\multicolumn{1}{|c|}{Algoritmo\textbackslash Cantidad de VNS}
+& 1 & 10 & 20 & 30 \\ \hline
+N-VNS & 46,8 s & 163,2 s & 250,6 s & 341,7 s \\ \hline
+N-VNS+EV (50) & 16,5 s & 130,9 s & 261,1 s & 409,7 s \\ \hline
+N-VNS+EV (250) & \textbf{10,1 s} & \textbf{94,8 s} & \textbf{194,3 s} & \textbf{288,3 s} \\ \hline
+N-VNS+EV (500) & 10,3 s & 99,1 s & 198,0 s & 296,6 s \\ \hline
+N-VNS+EV (750) & 11,0 s & 106,0 s & 207,2 s & 318,4 s \\ \hline
+N-VNS+EV (1000) & 11,0 s & 108,1 s & 211,9 s & 332,1 s \\ \hline
+\end{tabular}
+\caption{Datos generados para algoritmo simple y N-VNS con exploración de vecindario. Los mejores resultados son resaltados con letra negrita.}
+\label{anexoALN:table:test-table-VNS-exp_vec_and_parallel}
+\end{table}
+
+De estos datos se puede notar que la nueva implementación es más eficiente en todos los casos evaluados
+menos para el caso en que se corre con un tamaño de vecindario de 50, en este caso solo es más eficiente
+cuando se tienen menos de 20 cálculos de VNS en simultáneo, esto se puede observar fácilmente en la Figura \ref{anexoALN:fig:T_ejec_exploracion_vec_y_paralelo}.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.45\textwidth, trim={0cm 0cm 0cm 0cm}, clip]{./anexos/imgs/aln/T_ejec_exploracion_vec_y_paralelo.pdf}
+\caption{Gráfico con tiempo de ejecución de algoritmo N-VNS y N-VNS+EV para múltiples cantidades de VNS en simultáneo y múltiples tamaños de vecindarios. Cada serie representa la ejecución de un algoritmo con el parámetro de tamaño de vecindario fijo (en el caso de N-VNS el tamaño es fijo en 50 pero este no afecta de ninguna manera el tiempo de ejecución en dicho algoritmo).}
+\label{anexoALN:fig:T_ejec_exploracion_vec_y_paralelo}
+\end{figure}
+
+Lo interesante a destacar de estos resultados es que el tiempo de ejecución no mejora si se amplía el tamaño
+del vecindario sino que podemos notar la existencia de un punto de inflexión donde si se amplía el tamaño del
+vecindario el algoritmo demora más tiempo en computar, lo cual no parece ser consistente con los resultados
+de la evaluación de la exploración de vecindario mostrados anteriormente. Esto es debido a que en determinado
+punto el beneficio que se obtiene de la eficiencia del producto matriz-matriz disminuye y la ineficiencia introducida
+por el código del algoritmo aumenta causando peores resultados. En la Figura \ref{anexoALN:fig:T_ejec_exploracion_vec_y_paralelo}
+se puede notar que la serie para el vecindario de tamaño 250 se mantiene por debajo de todas las demás,
+por lo tanto es el que resulta dar un mejor incremento de performance de todas los vecindarios que fueron
+analizados. Por otro lado en la Figura \ref{anexoALN:fig:T_ejec_exploracion_vec_y_paralelo_EV_zoom} se puede
+notar cómo varía el tiempo de ejecución pero tomando como variable el tamaño del vecindario, donde se puede
+ver que a medida que aumenta la cantidad de VNSs que son calculados en simultáneo, el aumento de velocidad
+obtenido es menor.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.45\textwidth, trim={0cm 0cm 0cm 0cm}, clip]{./anexos/imgs/aln/T_ejec_exploracion_vec_y_paralelo_EV.pdf}
+\caption{Gráfico de tiempo de ejecución de algoritmo VNS-EV y ejecución múltiple variando el tamaño de los vecindarios explorados. En cada serie se tiene la misma cantidad de VNS ejecutados al mismo tiempo (1, 10, 20 y 30) y su primer valor es el tiempo obtenido para el algoritmo N-VNS (que se intenta mejorar).}
+\label{anexoALN:fig:T_ejec_exploracion_vec_y_paralelo_EV}
+\end{figure}
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.70\textwidth, trim={0cm 0cm 0cm 0cm}, clip]{./anexos/imgs/aln/T_ejec_exploracion_vec_y_paralelo_EV_zoom.pdf}
+\caption{Tiempo de ejecución calculado para algoritmo N-VNS+EV. Cada gráfico representa una serie de la Figura \ref{anexoALN:fig:T_ejec_exploracion_vec_y_paralelo_EV} y el punto inicial representa el tiempo obtenido para el algoritmo que ejecuta varios VNS en simultáneo.}
+\label{anexoALN:fig:T_ejec_exploracion_vec_y_paralelo_EV_zoom}
+\end{figure}
+
+El aumento de velocidad obtenido se puede consultar en la Figura \ref{anexoALN:fig:Speedup_exploracion_vec_y_paralelo_EV(250)},
+donde es posible ver que la ganancia en el mejor de los casos (con tamaño 250 de vecindario) decrementa a
+medida que se aumenta la cantidad de instancias de VNS a calcular tendiendo a 1, o sea a la misma velocidad que
+el algoritmo N-VNS, y que si se aumenta la cantidad de instancias de VNS a ejecutar incluso sucedería que el
+aumento de velocidad sería inferior a 1 o sea sería menos eficiente que el original.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.45\textwidth, trim={0cm 0cm 0cm 0cm}, clip]{./anexos/imgs/aln/Speedup_exploracion_vec_y_paralelo_EV_250_.pdf}
+\caption{Aumento de velocidad calculado para las ejecuciones del algoritmo N-VNS+EV variando el tamaño de los vecindarios explorados y la cantidad e instancias de VNS a ejecutar. Los datos utilizados para construir este gráfico es la fila N-VNS+EV (250), en negrita, de la Tabla~\ref{anexoALN:table:test-table-VNS-exp_vec_and_parallel}. En esta figura es posible ver mejor el comportamiento de cada serie en particular.}
+\label{anexoALN:fig:Speedup_exploracion_vec_y_paralelo_EV(250)}
+\end{figure}
+
+%---------------------------------------------------------------------------------------------------------------------------------
+\subsection{Evaluación de resultados de la optimización}
+
+Resulta interesante realizar un análisis de los resultados obtenidos por cada algoritmo pero esta vez en cuanto
+a la calidad de los resultados, viendo si los cambios aplicados a estos pueden resultar en mejoras o en el deterioro
+en cuanto a los resultados finales obtenidos luego de la optimización. Por esto se analizó el resultado de la
+ejecución de 100 instancias distintas para cada algoritmo, o sea se obtuvieron 100 óptimos a partir de la
+ejecución de cada uno de los algoritmos y se calcularon los histogramas y las medidas de media y desviación
+estándar. Los resultados de estos datos se pueden ver en la Tabla~\ref{anexoALN:table:optimization_results}.
+En la Figura~\ref{anexoALN:fig:HistogramasTodos} se ven los histogramas con los resultados de
+cada uno de lo algoritmos.
+
+\begin{table}[!htbp]
+\centering
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+\multicolumn{1}{|c|}{Algoritmo}
+& $\mu$ (lx) & $\sigma$ (lx) \\ \hline
+VNS simple & 19,3240 & $1,09*10^{-2}$ \\ [1ex] \hline
+N-VNS & 19,3240 & $1,23*10^{-2}$ \\ [1ex] \hline
+VNS-EV & 19,3204 & $6,73*10^{-3}$ \\ [1ex] \hline
+N-VNS + EV & 19,3252 & $1,35*10^{-2}$ \\ [1ex] \hline
+\end{tabular}
+\caption{Datos generados para 100 optimizaciones realizadas con cada uno de los algoritmos; simple, N-VNS, VNS-EV y N-VNS+EV. Todos los algoritmos fueron probados con tamaño de vecindario de 250. Se muestra la media ($\mu$) y la desviación estándar ($\sigma$).}
+\label{anexoALN:table:optimization_results}
+\end{table}
+
+\begin{figure*}[!ht]
+\centering
+\begin{subfigure}[100 instancias de VNS calculadas con el algoritmo VNS simple.]
+{\includegraphics[width=0.49\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./anexos/imgs/aln/HistogramVNSQuality.png}\label{anexoALN:fig:HistogramVNSQuality}}
+\end{subfigure}
+\begin{subfigure}[100 instancias de VNS calculadas con el algoritmo N-VNS.]
+{\includegraphics[width=0.49\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./anexos/imgs/aln/HistogramN-VNSQuality.png}\label{anexoALN:fig:HistogramN-VNSQuality}}
+\end{subfigure}
+
+\begin{subfigure}[100 instancias de VNS calculadas con el algoritmo VNS-EV.]
+{\includegraphics[width=0.49\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./anexos/imgs/aln/HistogramExpVecQuality.png}\label{anexoALN:fig:HistogramVNS-EVQuality}}
+\end{subfigure}
+\begin{subfigure}[100 instancias de VNS calculadas con el algoritmo N-VNS+EV.]
+{\includegraphics[width=0.49\linewidth, trim={0cm 0cm 0cm 0cm}, clip]{./anexos/imgs/aln/HistogramN-VNSExpVecQuality.png}\label{anexoALN:fig:HistogramN-VNSExpVecQuality}}
+\end{subfigure}
+\mbox{}
+\caption{\label{anexoALN:fig:HistogramasTodos}Histograma con los resultados para cada algoritmo. Los valores son negativos ya que se está maximizando por medio del minimizado del opuesto.}
+\end{figure*}
+
+Analizando los resultados obtenidos, la diferencia en la media se encuentra en el orden de $10^{-2}$. Por
+lo tanto, los resultados obtenidos por todos los algoritmos son similares, mientras que los resultados de la
+desviación estándar retornan resultados semejantes, donde la diferencia se encuentra en el orden de
+$10^{-2}$. El caso del algoritmo N-VNS+EV es el que obtiene la mejor media en sus resultados.
+
+%=================================================================
+\section{Mejora en la diversidad de los resultados}
+\label{anexoALN:sec:mejora_diversidad}
+
+Si bien de la Sección~\ref{anexoALN:sec:evaluacion_experimental} podemos determinar que los algoritmos
+obtienen la misma calidad de resultados mejorando los tiempos de ejecución, estos no toman en cuenta la
+variedad de resultados. En otras palabras la ejecución paralela de los algoritmos lleva a que ciertas soluciones
+obtenidas sean similares, o sea no se controla la variedad de los resultados. El inconveniente de este
+comportamiento es el posible desperdicio de tiempo de cómputo debido al procesamiento de varias soluciones que
+no son de mayor utilidad ya que son iguales o similares. Por esto resulta interesante la implementación de técnicas
+que permitan utilizar la información de todas las instancias de VNS para así controlar la variedad de soluciones
+obtenidas.
+
+El método seleccionado para realizar lo comentado es Clearing~\cite{Petrowski1996} y consiste en realizar la
+competencia entre los individuos de las últimas dos generaciones, creando una nueva generación que mantiene
+únicamente los individuos que tengan mayor fitness dentro de cada nicho. 
+Luego, si la cantidad de individuos correspondientes a la nueva generación es menor que la cantidad de instancias
+de VNS que están corriendo en simultáneo, se crean nuevas instancias de VNS que comienzan la búsqueda desde el
+inicio en áreas del espacio de búsqueda seleccionadas aleatoriamente.
+Por lo tanto, se obtiene una nueva generación que cumple lo siguiente:
+\begin{itemize}
+\item Existe únicamente un individuo por nicho.
+\item Cada individuo es el de mayor fitness para su nicho.
+\item Se continúa con el algoritmo VNS de los individuos que pertenecen a la última generación, pero se reinicia el
+vecindario de búsqueda.
+\item Se continúa con el algoritmo VNS de los individuos que pertenecen a la penúltima generación.
+\item Se reinician aquellas instancias de VNS para las cuales no exista ningún individuo seleccionado.
+\end{itemize}
+Debido al costo computacional que requiere esta técnica, esta se realiza una vez cada cierta cantidad de iteraciones.
+
+La comparación de las soluciones se realiza en base a la radiosidad resultante. Por lo tanto, dos individuos
+pertenecen al mismo nicho si la distancia entre los vectores de radiosidad de estos es inferior al radio utilizado en
+el algoritmo.
+
+%---------------------------------------------------------------------------------------------------------------------------------
+\subsection{Evaluación de resultados de la diversidad}
+
+El algoritmo que incluye la técnica de Clearing, que llamaremos N-VNS+C de aquí en más, toma 984,1s en
+comparación a los 880,4s necesarios para en ejecutar el algoritmo N-VNS por lo tanto la utilización del algoritmo
+no degrada demasiado el tiempo de ejecución del mismo. El Clearing fue aplicado una vez cada 4000 iteraciones 
+y se realizaron 15000 iteraciones.
+Los resultados obtenidos para el algoritmo N-VNS+C se pueden consultar en la Tabla~\ref{anexoALN:table:clearing_results}
+y el histograma en la Figura~\ref{anexoALN:fig:HistogramN-VNSClearingQuality}.
+
+\begin{table}[!htbp]
+\centering
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+\multicolumn{1}{|c|}{Algoritmo}
+& $\mu$ (lx) & $\sigma$ (lx) \\ \hline
+N-VNS+C & 19,2949 & $3,77*10^{-2}$ \\ [1ex] \hline
+\end{tabular}
+\caption{Datos generados para 100 optimizaciones realizadas para el algoritmo N-VNS utilizando Clearing (N-VNS+C) una vez por cada 1/20 del espacio de iteraciones (sin incluir iteración inicial y final). Se muestra la media ($\mu$) y la desviación estándar ($\sigma$).}
+\label{anexoALN:table:clearing_results}
+\end{table}
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.45\textwidth, trim={0cm 0cm 0cm 0cm}, clip]{./anexos/imgs/aln/HistogramClearingQuality.png}
+\caption{Histograma con el resultado de 100 instancias de N-VNS+C. En el eje de las abscisas se tiene la cantidad de iluminación recibida en la escena (medida en luxes y con valores negativos ya que se está buscando maximizar) y en el eje de las ordenadas se tiene la cantidad de veces que el resultado fue obtenido.}
+\label{anexoALN:fig:HistogramN-VNSClearingQuality}
+\end{figure}
+
+Como se puede notar, comparando con los resultados mostrados en la Figura~\ref{anexoALN:fig:HistogramN-VNSQuality},
+la calidad de los resultados varía notoriamente con respecto a los obtenidos previamente por los algoritmos que
+no utilizan Clearing. Esto puede ser debido a que algunas instancias de VNS fueron reiniciadas en la última
+ejecución de la técnica de Clearing, por lo tanto no llegaron a buenas soluciones antes de completar la cantidad de
+iteraciones totales para el algoritmo.
+Por otro lado, el promedio de soluciones que pertenecen a un mismo nicho obtenido mediante la aplicación de esta
+técnica es de 3,39 para el algoritmo N-VNS+C mientras que se encuentra en el orden de 5,43 para el algoritmo
+N-VNS. Y el histograma para los resultados del algoritmo N-VNS+C muestan que se obtienen varios grupos con
+buenos resultados.
+
+Cabe destacar nuevamente que el método de Clearing se aplica una vez cada cierta cantidad de iteraciones para no
+degradar la performance, ya que es un método costoso computacionalmente.
+
+%=================================================================
+\section{Conclusiones}
+
+A partir de los resultados obtenidos en la Sección~\ref{anexoALN:sec:evaluacion_experimental} podemos concluir
+que las tres propuestas de mejora de performance implementadas logran mejorar los tiempos de ejecución que se
+obtendría en caso de utilizar el producto matriz-vector, manteniendo a su vez la calidad de los resultados. Por otra
+parte, resulta claro que la aplicación de cada una de estas propuestas debe ser estudiada, ya que no existe una
+única solución que sea la mejor en todos los casos.
+Los beneficios que cada técnica brinda son bastante diferentes. 
+Disponer de un conjunto de soluciones distintas pero con buenos valores puede resultar beneficioso
+para brindar mayores opciones al diseñador.
+Por otro lado evaluar los vecindarios en un solo producto matriz-matriz resulta beneficioso para acelerar el cálculo simple de un VNS.
+Luego la técnica de N-VNS+EV implementada resulta interesante como mejora a la técnica N-VNS, pero no mejora
+los resultados en todos los casos. Además a medida que se aumenta el tamaño de la matriz el código que guarda
+las estructuras de datos empieza a pesar por sobre la ganancia que se obtiene en el cálculo del producto
+matriz-matriz.
+
+En cuanto a la Sección~\ref{anexoALN:sec:mejora_diversidad}, la aplicación del método de Clearing para mejorar
+la diversidad de los resultados obtenidos resulta de especial utilidad para lograr podar la ejecución de instancias de
+VNS que son similares, manteniendo siempre la solución con los mejores resultados obtenidos hasta el momento.
+De esta manera se logra optimizar la utilización de los recursos de cómputo en la búsqueda de nuevas y distintas
+soluciones.
+
+En resumen:
+\begin{enumerate}
+\item Múltiples ejecuciones de VNS (N-VNS)
+\begin{itemize}
+\item Notable aceleración comparado con ejecución secuencial, acercándose a un aumento de velocidad de 5 veces en el cálculo de 100 instancias en simultáneo.
+\item Aplicación directa, no es necesario evaluar demasiado en qué casos se obtiene beneficios de su uso ya que
+aumentando la cantidad de VNS calculados, en un rango que aplica a situaciones reales, se obtienen mejores tiempos.
+\end{itemize}
+\item Múltiple cálculo de vecinos (VNS-EV)
+\begin{itemize}
+\item Buena aceleración con respecto al cálculo secuencial de elementos del vecindario.
+\item No corta la búsqueda en el vecindario cuando se encuentra un mejor valor sino que termina de evaluar el vecindario.
+\end{itemize}
+\item Múltiples ejecuciones de VNS con múltiple cálculo de vecinos (N-VNS+EV)
+\begin{itemize}
+\item Aceptable aceleración respecto al algoritmo N-VNS.
+\item El aumento de la cantidad de VNS evaluados al mismo tiempo reduce la aceleración.
+\end{itemize}
+\item Método de Clearing para búsqueda de diversidad (N-VNS-C)
+\begin{itemize}
+\item Usa eficientemente los recursos de cómputo en la búsqueda de variedad en las soluciones, podando soluciones similares y posibilitando la búsqueda en nuevas regiones del espacio de búsqueda.
+\end{itemize}
+\end{enumerate}
+% end of chapter

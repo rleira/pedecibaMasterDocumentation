@@ -1,0 +1,43 @@
+%% theorems.sty
+%%
+%% Crated and mantained by Juan Antonio Navarro, ma108907@mail.udlap.mx
+%% http:\\www.udlap.mx\~ma108907\latex
+%%
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{theorems}[2002/10/28 Definitions for theorem like environments]
+
+\RequirePackage{amsthm}
+
+\newcommand{\@newthm}{}
+\newcommand{\@namesfile}{inc/english.nms}
+
+\DeclareOption{section}{\renewcommand{\@newthm}[2]{\newtheorem{#1}{#2}[section]}}
+\DeclareOption{document}{\renewcommand{\@newthm}[2]{\newtheorem{#1}{#2}}}
+\DeclareOption{chapter}{\renewcommand{\@newthm}[2]{\newtheorem{#1}{#2}[chapter]}}
+\DeclareOption{english}{\renewcommand{\@namesfile}{inc/english.nms}}
+\DeclareOption{spanish}{\renewcommand{\@namesfile}{inc/spanish.nms}}
+\ExecuteOptions{section}
+\ProcessOptions\relax
+
+\input{\@namesfile}
+
+\@newthm{theorem}{\theoremname}
+\@newthm{lemma}{\lemmaname}
+\@newthm{corollary}{\corollaryname}
+\@newthm{proposition}{\propositionname}
+\@newthm{conjecture}{\conjecturename}
+
+\theoremstyle{definition}
+\@newthm{definition}{\definitionname}
+\@newthm{example}{\examplename}
+\@newthm{problem}{\problemname}
+\@newthm{exercise}{\exercisename}
+\@newthm{notation}{\notationname}
+%\@newthm{algorithm}{\algorithmname}
+\@newthm{note}{\notename}
+\newtheorem*{acknowledgment}{\acknowledgmentname}
+
+\theoremstyle{remark}
+\newtheorem*{remark}{\remarkname}
+\newtheorem*{claim}{\claimname}
+\newtheorem*{solution}{\solutionname}

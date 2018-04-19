@@ -1,0 +1,169 @@
+%!TeX encoding = ISO-8859-1
+\chapter{Introducción}\label{capIntro}
+
+%=================================================================
+En la actualidad las computadoras son ampliamente utilizadas para modelar y computar todo tipo de fenómenos,
+especialmente los físico-matemáticos, complementando la teoría y experimentos con la resolución de problemas
+\cite{Koziel2011}.
+El principal aporte de estas es facilitar el estudio de dichos fenómenos llevando a cabo experimentos
+(simulaciones) comprobando así las teorías en que se basan. Lo interesante de las simulaciones realizadas por
+medio de computadores es la capacidad de realizar experimentos que de otra forma resultarían muy costosos, ya
+sea debido a su alto costo en recursos materiales, o al tiempo requerido para realizarlos. Sin embargo estos
+experimentos no son necesariamente precisos, debido a una de las características inherentes a los computadores:
+sus capacidades de cómputo y de almacenamiento finitos. A pesar de esto, debido al incremento exponencial de
+la potencia de las computadoras ---que se han mantenido desde sus comienzos \cite{Moore2000} --- y al
+desarrollo de nuevos algoritmos, es cada vez más fácil realizar simulaciones que brinden resultados más exactos,
+y simular fenómenos físico-matemáticos que antes no eran posibles. En este campo, la computación gráfica es
+una de las áreas más relevantes, debido a la facilidad que poseen las personas de comprender elementos visuales
+y a la complejidad inherente en los cálculos detrás de los mismos.
+En el área de la computación gráfica la luz es un fenómeno que ha sido objeto de mucho estudio. La luz resulta
+especialmente interesante de estudiar debido a su complejidad y a la gran cantidad de fenómenos asociados a
+la misma (como la refracción, reflexión, dispersión, propagación, difracción, interferencia, entre otros) haciendo
+de esta una área de gran interés académico. A su vez dentro de los distintos métodos y algoritmos desarrollados
+en el estudio de la luz, aquellos que se enfocan en estudiar la iluminación global de una escena (GI por sus siglas
+en inglés) son de mayor trascendencia. Estos simulan los efectos de la reflexión de la luz en objetos de una
+escena, y cómo es esta conducida a través de los medios involucrados \cite{Ritschel2012}. Entre los algoritmos
+que estudian la GI se encuentran aquellos que intentan obtener resultados físicamente realistas o aquellos que
+intentan convencer al observador por medio de artificios o heurísticas psicológicamente satisfactorios.
+
+%=================================================================
+\section{Problemas de optimización}
+Como en la mayoría de los problemas importantes, la optimización es también objeto de estudio en lo referente a
+la luz. En esta área, algoritmos cuyo objetivo es la búsqueda de soluciones óptimas han sido propuestos para
+distintos tipos de problemas relativos a la luz \cite{Contensin2002, Patow2003, Fernandez2014}. En los
+problemas de optimización combinatoria se buscan soluciones óptimas dentro de un espacio de búsqueda dado. Dentro de esta área existen los problemas de optimización donde el objetivo del problema es el de encontrar la
+solución con el mejor valor retornado para la función objetivo \cite{Korte2007}. Estos problemas se caracterizan
+por poseer un espacio de búsqueda. Para la mayoría de este tipo de problemas, el espacio de búsqueda crece de
+forma exponencial en relación a sus variables. Esto causa que la evaluación de todas las soluciones no sea posible
+y trae la necesidad de la utilización de heurísticas.
+
+Si bien los principios detrás de la interacción entre la luz y los objetos son bien comprendidos, la eficiencia
+computacional de los algoritmos de GI es objeto de estudio aún en la actualidad. Muchos modelos y algoritmos
+han sido creados y mejorados en el correr del tiempo \cite{Whitted1980,Jensen1996,Goral1984,Cohen1993}
+para resolver este tipo de problemas de manera eficiente. Cuando se intenta resolver un problema de
+optimización es importante que los cálculos sean eficientes, de otra manera los algoritmos están sujetos a grandes
+tiempos de respuesta.
+
+%=================================================================
+\section{Motivación y objetivos}
+El verbo iluminar refiere a la acción de proyectar luz sobre un cuerpo, o conjunto de cuerpos. Y se conoce como
+iluminación al conjunto de luces que se instala, en un determinado entorno, con la intención de afectarlo a nivel
+visual por medio de la luz. La correcta iluminación de un entorno es un problema de gran importancia en el 
+diseño arquitectónico (conocido como diseño de iluminación) y es una de las principales áreas de aplicación de los
+algoritmos de GI. La luz y cómo esta se transmite es de vital importancia en el diseño arquitectónico debido a que es
+a través de la luz que las personas los perciben.
+En el diseño arquitectónico se deben considerar un conjunto amplio de objetivos y restricciones, conocidas como
+intensiones de iluminación (LI por sus siglas en inglés)~\cite{russell2012architecture}. Dicho conjunto de LI
+deben ser satisfechas con el propósito de asegurar condiciones de eficiencia, atractivo y aspectos funcionales
+en el ambiente resultante. Para llevar a cabo diseños de iluminación en ambientes arquitectónicos, los diseñadores
+utilizan una amplia gama de herramientas de software profesionales, llamadas herramientas de diseño asistido
+por computadora (CAD por sus siglas en inglés), que asisten en el diseño de la iluminación. Dialux \cite{dialux} o
+Relux \cite{Relux} son ejemplos de esas herramientas CAD. Sin embargo uno de los principales problemas de las
+herramientas CAD es que están basadas en estrategias directas, que retornan resultados a partir de una entrada dada.
+Retornan estadísticas, resultados visuales e informes, a partir de una configuración dada por el diseñador.
+Estas herramientas no buscan configuraciones óptimas ni facilitan su búsqueda sino que proporcionan resultados
+objetivos a diseños previamente ingresados.
+
+La principal dificultad de las estrategias directas es que la cantidad de configuraciones a ser evaluadas es muy
+grande, por lo que resulta difícil evaluar todo el dominio de configuraciones posibles. Este proceso al ser llevado a
+cabo por diseñadores, resulta repetitivo y tedioso además de demandar mucho tiempo.
+
+Siendo la simulación por computador una herramienta ampliamente utilizada para representar fenómenos
+físico-matemáticos, más específicamente la luz en su interacción con la materia, resulta importante el estudio y 
+creación de un software que sea capaz de computar configuraciones de luminarias óptimas a partir de un conjunto
+de LI. Este tipo de problemas es conocido como problemas inversos de iluminación (ILP~\cite{Marschner1998}
+por sus siglas en inglés).
+Debido a lo inmenso del dominio de configuraciones posibles, es necesario utilizar heurísticas para realizar un análisis
+inteligente del dominio de soluciones de forma de encontrar buenas soluciones sin necesidad de evaluar todo el
+dominio (por fuerza bruta), lo cual resultaría en un consumo excesivo de recursos de cómputo. Si bien las heurísticas
+no proveen la solución óptima, el resultado de estas puede ser utilizado como una buena solución inicial que el
+diseñador puede luego ajustar. También puede realizar nuevos procesos de optimización cambiando los objetivos
+y restricciones de la búsqueda. 
+
+En este contexto, el objetivo de esta tesis es proponer nuevas técnicas de simulación y de iluminación global
+para resolver el problema de la selección óptima de luminarias como un ILP y de manera eficiente.
+%=================================================================
+\section{Contribución de la tesis}
+
+En el contexto de técnicas de asistencia al diseño de iluminación, se propone un método novedoso para el cálculo
+de configuraciones de luminarias. Este método busca soluciones óptimas considerando las restricciones (LIs) impuestas 
+por el diseñador, considerando cientos de posiciones distintas a la vez de miles de luminarias.  La información de la
+emisión de las luminarias es obtenido utilizando los datos reales de emisión de las luminarias. Estos datos son extraídos
+de los archivos fotométricos (que brindan los fabricantes de las mismas). Partiendo de una base de datos de
+luminarias y una geometría cualquiera, es posible dar como entrada al método un conjunto de restricciones que
+las soluciones deben cumplir y un conjunto de objetivos. A cambio, el algoritmo retorna de forma eficiente una buena
+solución (óptima en el subconjunto de soluciones evaluadas) dando como salida la posición, tipo de luminaria y
+rotación que cada luminaria debe tener. Algunos trabajos~\cite{Shariful2010,Uygun2015,Schwarz2014} han estudiado
+este problema y considerado estas variables pero sin considerar variedades grandes de tipos de luminarias ni su emisión real.
+
+Además de la evaluación del algoritmo, se realiza la evaluación de las técnicas propuestas en un conjunto de
+problemas interesantes, probando su utilidad, y también se realiza el estudio de un caso real. Estas evaluaciones
+exploran su uso en el área de diseño arquitectónico por medio del cálculo de iluminaciones realistas para escenas
+complejas y de grandes dimensiones, de forma eficiente. Los resultados muestran buenas soluciones, que pueden
+ser utilizadas como punto de partida en el estudio de la iluminación. A la vez, el método puede ser utilizado para
+optimizar o evaluar propuestas concretas realizadas por expertos.
+
+En resumen, las principales contribuciones del trabajo son:
+\begin{itemize}
+\item el estudio de las técnicas de iluminación global así como el análisis de sus trabajos relacionados;
+\item el estudio de las técnicas de resolución de problemas inversos de iluminación;
+\item la propuesta de varias técnicas y algoritmos que permiten el cálculo de la iluminación a partir de la información de los archivos fotométricos;
+\item la propuesta de mejoras a la eficiencia computacional de las técnicas planteadas que permiten realizar optimizaciones considerando dominios de grandes dimensiones;
+\item un profundo análisis experimental de las técnicas propuestas, que demuestra la capacidad de estas para hallar soluciones óptimas o satisfactorias de iluminación arquitectónica considerando objetivos y restricciones realistas.
+\end{itemize}
+
+%=================================================================
+\section{Estructura de la tesis}
+La tesis se estructura de la siguiente forma:
+
+El Capítulo~\ref{capEstadoDelArte} presenta los conceptos relacionados a todas las áreas de conocimiento,
+algoritmos, técnicas y conceptos relacionados a los objetos de estudio de la tesis. Estos están principalmente
+relacionados a la luz y las técnicas de iluminación global así como al área de optimización. En dicho capítulo se
+realiza un estudio del estado del arte de cada una de las áreas involucradas en esta tesis.
+Se comienza describiendo la iluminación global, detallando la ecuación utilizada para modelarla junto a sus
+aspectos físico-matemáticos y presentando los trabajos realizados en las últimas décadas. Luego se describe la
+radiosidad, principal método utilizado en esta tesis para calcular la iluminación resultante en las escenas,
+describiendo sus características principales, la forma en que esta se calcula y algunos de los métodos existentes
+en el estado del arte para realizar su cómputo de forma eficiente.
+En cuanto a la optimización, se introducen los problemas inversos y las heurísticas utilizadas en la tesis para
+realizar la búsqueda de soluciones, a la vez de presentar técnicas que permiten su cómputo de forma eficiente.
+Por último en este capítulo se realiza una introducción a la fotometría, un área de suma importancia para
+esta tesis, utilizada para obtener datos realistas de las emisiones de las luminarias.
+
+En el Capítulo~\ref{capDetallesDelMetodo} se describen los conceptos, algoritmos y técnicas implementadas
+para realizar el cálculo de la iluminación, la arquitectura de la solución implementada y todo lo referente a los
+cálculos necesarios para realizar un cálculo realista de la iluminación final producida por las luminarias en la escena.
+Se comienza introduciendo la arquitectura, mostrando tanto la entrada como la salida del algoritmo y la
+comunicación de cada uno de los componentes de la misma.
+Luego se describe el proceso de pre-cómputo y se continúa detallando el proceso de optimización.
+A continuación se describe cómo se mapea la luz emitida por una luminaria en la escena, las técnicas
+utilizadas, las ecuaciones involucradas en su cálculo, y el proceso de construcción de la emisión a partir de los
+datos de un archivo fotométrico dado. Por último, se describen los detalles de implementación y cómo son
+utilizadas las heurísticas seleccionadas para realizar la búsqueda de soluciones.
+
+Luego, en el Capítulo~\ref{capAnalisisExperimental} se muestran los experimentos realizados para evaluar
+los algoritmos implementados, se realiza un análisis experimental que muestra distintos tipos de objetivos y
+restricciones de optimización y se exponen los resultados obtenidos para los mismos.
+Se comienza dando una breve introducción a los factores generales que aplican a todos los experimentos 
+realizados, introduciendo las variables utilizadas en los casos de estudio, las escenas utilizadas, y el
+hardware utilizado para realizar los experimentos. Luego se analizan los resultados del algoritmo midiendo qué 
+tan bien converge a una solución dada, minimizando la distancia de la iluminación producida para una
+configuración dada. El primer caso de estudio analiza la optimización referente al consumo eléctrico, siendo este
+uno de los principales casos de estudio de la tesis. Luego se realizan varios experimentos que intentan evaluar
+objetivos que son aplicados en estándares de iluminación, como la uniformidad de la iluminación producida o la
+cantidad de luz que tienen ciertas superficies.
+Luego se evalúa la técnica de evaluación paralela de individuos como método para mejorar la eficiencia del
+algoritmo. 
+A continuación se evalúa la eficiencia computacional del algoritmo, considerando las distintas variables y
+condiciones que controlan la eficiencia y eficacia del algoritmo (cantidad de luminarias por configuración,
+el uso de rotaciones y el tamaño de hemi-cubos utilizados).
+Luego se evalúan las heurísticas VNS y algoritmo evolutivo, realizando experimentos que permiten
+determinar cuál de las mismas retorna mejores resultados.
+El capítulo finaliza realizando el estudio de la aplicación del algoritmo en un caso real. En el caso estudiado
+es necesario actualizar el diseño de la iluminación en un edificio existente.
+
+Por último en el Capítulo~\ref{capConclusionesTrabFuturo} se exponen las conclusiones finales de la tesis
+y se presentan las principales líneas de trabajo futuro que tienen la finalidad de la mejora de las técnicas
+implementadas.
+%-------------------------------------------------------------------------------
+% end of chapter

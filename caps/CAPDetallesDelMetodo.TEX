@@ -1,0 +1,556 @@
+%!TeX encoding = ISO-8859-1
+\chapter{Optimización de configuraciones de luminarias} \label{capDetallesDelMetodo}
+
+%=================================================================
+\section{Introducción}
+Los métodos presentados en esta tesis se basan en la ecuación de la radiosidad, utilizándola para realizar el 
+cálculo de la iluminación en la escena. Para poder utilizar la ecuación de radiosidad es necesario conocer los
+parches emisores de luz, aquellos que generan la iluminación en la escena. Los métodos propuestos utilizan
+como emisión, la primera reflexión de la luz emitida por una luminaria en los parches que su luz alcance. Es
+importante notar que el uso de varias luminarias es tan simple como acumular la cantidad de luz emitida por
+cada una de estas, y utilizar el resultado acumulado como entrada en la ecuación de radiosidad.
+El cálculo de la primera reflexión de una luminaria es realizado utilizando la información de la distribución de la
+intensidad luminosa de la luminaria. Esta información es descrita en los archivos fotométricos, que cada
+fabricante de luminarias provee para cada luminaria.
+Una vez computada la radiosidad, se utilizan los valores de iluminación obtenidos sobre la escena para
+determinar si se cumplen las LIs (Lighting Intentions)~\cite{russell2012architecture} y para evaluar qué tan
+buena es la solución (los valores a optimizar).
+La búsqueda del óptimo es implementada por medio de dos heurísticas, VNS y Algoritmos Evolutivos. La
+eficiencia de estas técnicas en la búsqueda de soluciones es evaluada en futuros capítulos.
+
+\section{Arquitectura de la solución}
+La arquitectura de la solución, mostrando las etapas del proceso, se puede ver en la
+Figura~\ref{fig-capDetallesDelMetodo:pipeline}.
+El método tiene como entrada un modelo arquitectónico de un diseño interior preparado para el modelado
+de iluminación. También, recibe como entrada una base de datos con archivos fotométricos que contiene la
+información de cada una de las luminarias que se desean considerar en el proceso de optimización. Dichos
+archivos fotométricos pueden ser obtenidos de los fabricantes de luminarias.
+
+El siguiente paso es la definición, por parte del diseñador, de los parámetros concernientes a las LIs, los
+objetivos y restricciones de iluminación, e.g., consumo de energía o cantidad de luz recibida en cierta
+superficie, además de los lugares donde las luminarias pueden ser ubicadas en la escena y otras variables a
+considerar en la optimización.
+
+Luego, el proceso de pre-cómputo es ejecutado, donde se procesan tanto los archivos fotométricos de las
+luminarias (para ordenarlas) como también las posibles ubicaciones en que estas pueden ser localizadas. El
+objetivo del pre-procesamiento de las ubicaciones es generar hemi-cubos que contienen los parches visibles desde
+cada ubicación (estos hemi-cubos serán descritos más adelante). Además, el proceso de pre-cómputo retorna las
+matrices de LRR, a partir de la geometría de la escena, que son utilizadas para realizar el cálculo, veloz, de la
+radiosidad.
+
+Por último, se tiene la etapa de optimización. En esta se realiza la búsqueda de la configuración óptima. Una vez
+la configuración óptima es retornada por el proceso de optimización, es evaluada por el diseñador quien decide
+si cumple con lo deseado. De no acercarse a lo deseado, el diseñador puede opcionalmente modificar las variables
+de optimización o las LIs y volver a realizar los pasos a partir de la definición del problema. Otra posibilidad consiste
+en modificar las soluciones manualmente, para alcanzar una solución de compromiso entre el resultado del
+método y su experiencia, o de alguna otra herramienta de asistencia que utilice. Dependiendo de los
+cambios es posible que se deba realizar el pre-cómputo nuevamente, por ejemplo si se modifica la base de datos
+de archivos fotométricos o si se modifican las posiciones donde se pueden ubicar las luminarias.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.85\textwidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/metodo/Pipeline.pdf}
+\caption{Tubería del sistema.}
+\label{fig-capDetallesDelMetodo:pipeline}
+\end{figure}
+
+%=================================================================
+\section{Pre-cómputo}
+
+El proceso de pre-cómputo se describe en la Figura~\ref{fig-capDetallesDelMetodo:precomputationprocess}.
+Se reciben como entrada la base de datos de archivos fotométricos y la geometría de la escena con la definición
+de las posiciones donde es posible ubicar las luminarias.
+
+Las distribuciones de intensidad luminosa de cada luminaria en la base de datos son utilizadas para ordenarlas
+por similitud. Los pares de hemi-cubos de vista $\mathbf{H}$, son creados para cada posible ubicación de una
+luminaria, utilizando la información de la geometría de la escena y la definición de las posiciones de las luminarias.
+Estos hemi-cubos son calculados utilizando el algoritmo de Z-buffer, donde cada píxel contiene el índice del
+parche, de la escena, que es visto a partir de este (ver Figura~\ref{fig-capDetallesDelMetodo:viewAndIndexes}).
+
+Como salida se tendrán, un vector con el índice de cada luminaria en la lista ordenada ($I$), un par de hemi-cubos de
+vista ($\mathbf{H}$) para cada ubicación y una representación compacta de la escena es calculada por medio
+del método LRR (Sección~\ref{subsec:rad_rango_bajo}).
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.90\textwidth, trim={4.5cm 0cm 0cm 0cm}, clip]{./img/metodo/PrecomputationProcessWithRots}
+\caption{Proceso de pre-cómputo. Los hemi-cubos $\mathbf{H}$ son generados, además de las matrices $\mathbf{Y}$ y $\mathbf{V}$ del método LRR. A su vez las luminarias son ordenadas según sus distribuciones de intensidad luminosa ($I$) de manera de tener cerca aquellas luminarias con distribuciones similares.}
+\label{fig-capDetallesDelMetodo:precomputationprocess}
+\end{figure}
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.65\textwidth]{./img/metodo/ViewAndIndexes}
+\caption{Un hemi-cubo $\mathbf{H}$ que contiene los parches de la escena que pueden ser vistos desde una luminaria. Cada píxel posee un número que indica el índice del parche visto a través de él. En la esquina superior derecha se muestra el índice asociado a cada píxel. El parche que es visto desde cada píxel del hemi-cubo $\mathbf{H}$ es determinado por medio del algoritmo Z-buffer.}
+\label{fig-capDetallesDelMetodo:viewAndIndexes}
+\end{figure}
+
+%----------------------------------------------------------------------------------------------------------------------------------
+\subsection{Generación de hemi-cubos de emisión}
+Dependiendo de si se utilizan rotaciones, el proceso de pre-cómputo puede además incluir la generación de los
+hemi-cubos que contienen la emisión de cada luminaria, $\mathbf{I}$ (calculados utilizando la información fotométrica
+de las luminarias). Es decir cuando no es necesario aplicar rotaciones, estos hemi-cubos son constantes y por lo tanto
+pueden ser calculados en el pre-cómputo. En cambio, cuando se aplican rotaciones, dichos hemi-cubos dependen
+directamente de las rotaciones aplicadas y, debido a que sería de gran costo mantener cada uno de los hemi-cubos
+correspondientes a cada rotación en memoria, este cálculo es realizado en la etapa de optimización (ver Figuras 
+\ref{fig-capDetallesDelMetodo:HRot_0_0_0} a \ref{fig-capDetallesDelMetodo:HRot_45_45_45}).
+
+%----------------------------------------------------------------------------------------------------------------------------------
+\subsection{Ordenamiento de luminarias}
+Para poder utilizar la metaheurística VNS, es necesario tener una forma de agrupar por similitud las variables
+involucradas en la optimización (crear los vecindarios). Es decir, dado un valor para una variable es necesario saber
+cuáles son sus valores vecinos o cercanos.
+
+Cada luminaria en la configuración es representada por medio de un conjunto de variables. Dicho conjunto está
+compuesto por tres variables que determinan la rotación (cada variable representando un ángulo), dos variables
+que determinan su posición en el espacio y una variable con el identificador de la luminaria utilizada.
+
+En el caso de las variables que definen las rotaciones, la agrupación en vecindarios es directa ya que las rotaciones
+son números, y por lo tanto rotaciones con valores cercanos (ángulos cercanos) son agrupadas en el mismo vecindario.
+En el caso de los hemi-cubos $\mathbf{H}$, es posible construir los vecindarios usando sus posiciones en la
+escena, es decir, su ubicación en la escena 3D determina qué tan cercana es una ubicación de la otra, resultando
+trivial la creación de vecindarios.
+Sin embargo para el caso las distribuciones de intensidad luminosa representados por los hemi-cubos $\mathbf{I}$,
+no existe una forma simple de agruparlos por similitud, o sea de construir los vecindarios necesarios para el VNS. Esto
+es debido a que los archivos fotométricos contienen la información de la emisión de la luminaria en cada ángulo, lo cual
+es representable como una matriz, y no todos los archivos fotométricos coinciden en los ángulos utilizados para su
+medición.
+En este caso utilizamos un algoritmo (Algoritmo~\ref{alg:sort_alg}) que ordena las luminarias utilizando la
+información de sus distribuciones de intensidad luminosa (obtenidas a partir de los archivos fotométricos y
+previamente interpolada calculando para cada luminaria su emisión en un conjunto idéntico de ángulos) y la
+distancia euclídea (o la norma de Frobenius debido a que son matrices).
+
+\begin{algorithm}
+\caption{Ordenamiento de hemi-cubos de luminarias}
+\label{alg:sort_alg}
+\begin{algorithmic}[1]
+\REQUIRE $\mathbf{D}$ \COMMENT{$\mathbf{D}$ es una matriz de distancias de dimensión n$\times$n}
+\STATE $I \leftarrow [$1$:$n$]$
+\FOR{$k$=$1$:$n$-$1$} 
+\STATE $\mathbf{subD}_k$$\leftarrow$$\mathbf{D}$($1$:$k$,$k$+$1$:$n$)
+\STATE $(min, i, j) \leftarrow minimum(\mathbf{subD_k)}$
+\IF{$min < \delta$}
+\STATE $\mathbf{D} \leftarrow moveCol(\mathbf{D}, j, i)$ \% mueve columna $j$ a la posición siguiente a $i$
+\STATE $\mathbf{D} \leftarrow moveRow(\mathbf{D}, j, i)$ \% mueve fila $j$ a la posición siguiente a $i$
+\STATE $I \leftarrow move(I, j, i)$ \% mueve el índice $j$ a la posición siguiente a $i$
+\ELSE
+\STATE $\mathbf{D} \leftarrow moveCol(\mathbf{D}, j, k)$ \% mueve columna $j$ al final de la lista ordenada
+\STATE $\mathbf{D} \leftarrow moveRow(\mathbf{D}, j, k)$ \% mueve fila $j$ al final de la lista ordenada
+\STATE $I \leftarrow move(I, j, k)$ \% mueve índice $j$ a la posición final
+\ENDIF
+\ENDFOR
+\RETURN $I$
+\end{algorithmic}
+\end{algorithm}
+
+El Algoritmo~\ref{alg:sort_alg} recibe como entrada una matriz $\mathbf{D}$, donde 
+$\mathbf{D}$$(i,j)$$=$$||$$\mathbf{I}_i$$-$$\mathbf{I}_j$$||_{Fr}$ es la distancia euclídea entre los hemi-cubos
+$\mathbf{I}$ de las $i$-ésima y $j$-ésima luminarias. En el paso $k$-ésimo, $I(1$$:$$k)$ es una lista que contiene
+las luminarias que ya han sido ordenadas, y $I(k$$+$$1$$:$$n)$ contiene el resto de luminarias que falta ordenar.
+En el $k$-ésimo paso se selecciona una luminaria $j$ de forma que minimiza la distancia a alguna de las luminarias de
+la lista ordenada. O sea la luminaria $j$ es seleccionada si esta posee el menor valor en la matriz
+$\mathbf{subD}_k$. En la línea 3 se construye la matriz $\mathbf{subD}_k$ (ver 
+Figura~\ref{fig-capDetallesDelMetodo:matrixSubDAndMin}). Esta contiene las distancias entre las luminarias de la lista
+ordenada (1 a $k$) y las luminarias aún no ordenadas ($k+1$ a $n$). Se selecciona la mínima distancia de
+$\mathbf{subD}_k$ (línea 4 y Figura~\ref{fig-capDetallesDelMetodo:matrixSubDAndMin}), que se encuentra
+en la fila $i$ columna $j$. Esto indica que la luminaria no ordenada $j$, es la más cercana a las luminarias ya ordenadas,
+en particular a $i$. 
+Si la distancia es menor a cierto umbral $\delta$ (predefinido como variable de entrada en el algoritmo de ordenamiento),
+entonces la luminaria $j$ es ubicada en la lista ordenada entre las luminarias $i$ e $i$$+$$1$ (líneas 6 a 8
+y Figura~\ref{fig-capDetallesDelMetodo:sortMatricesStepsA}). Si la distancia es mayor o igual a $\delta$, $j$ es
+ubicado al final de la lista ordenada (líneas 10 a 12 y Figura~\ref{fig-capDetallesDelMetodo:sortMatricesStepsB}).
+El algoritmo comienza incluyendo la primera luminaria en la lista ordenada, y en cada paso es agregada a la lista una
+nueva luminaria, tomada del conjunto desordenado. Como resultado se tiene que todas las luminarias están 
+en la lista ordenada y se retorna un vector que contiene los índices, ordenados, de las luminarias en la lista ordenada
+(línea 15). En dicho vector, la posición $i$ contiene el índice de la $i$-ésima luminaria en la lista ordenada.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.43\textwidth, trim={2.5cm 0cm 2.5cm 0cm}, clip]{./img/metodo/matrixSubD}
+\caption{La matriz $\mathbf{subD}_k$ contiene las distancias euclidianas entre las luminarias que están en el conjunto ordenado a aquellas en el conjunto desordenado. En $\mathbf{subD}_k(i,j)$ se encuentra la mínima distancia. En cada paso se selecciona aquella distancia que es mínima.}
+\label{fig-capDetallesDelMetodo:matrixSubDAndMin}
+\end{figure}
+
+\begin{figure}[!htbp]
+\centering
+\begin{subfigure}[$min(\mathbf{subD}_k) < \delta$]
+{\includegraphics[width=0.43\textwidth, trim={3cm 1cm 2.5cm 0cm}, clip]{./img/metodo/matrixIfStep}\label{fig-capDetallesDelMetodo:sortMatricesStepsA}}
+\end{subfigure}
+\begin{subfigure}[$min(\mathbf{subD}_k) \geq \delta$]
+{\includegraphics[width=0.43\textwidth, trim={3cm 1cm 2.5cm 0cm}, clip]{./img/metodo/matrixElseStep}\label{fig-capDetallesDelMetodo:sortMatricesStepsB}}
+\end{subfigure}
+\caption{Etapas del ordenamiento. Se reubican la fila y columna $j$.}
+\label{fig-capDetallesDelMetodo:sortMatricesSteps}
+\end{figure}
+
+Un ejemplo con el resultado del ordenamiento de la base de datos de luminarias se puede ver en la
+Figura~\ref{fig-capDetallesDelMetodo:sortResults}. En esta se observa que existe una mayor semejanza
+entre las columnas consecutivas en la base de datos ordenada. Cada columna contiene un hemi-cubo $\mathbf{I}$
+de dimensión $n\times n$, pero ordenado en un vector de dimensión $n^2\times 1$.
+
+\begin{figure}[!htbp]
+\centering
+\begin{subfigure}[Base de datos desordenada]
+{\includegraphics[width=0.65\textwidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/metodo/UnOrderedLuminaireMatrix}\label{fig-capDetallesDelMetodo:sortResultsA}}
+\end{subfigure}
+
+\begin{subfigure}[Base de datos ordenada]
+{\includegraphics[width=0.65\textwidth, trim={0cm 0cm 0cm 0cm}, clip]{./img/metodo/OrderedLuminaireMatrix}\label{fig-capDetallesDelMetodo:sortResultsB}}
+\end{subfigure}
+\caption{Gráfico de las base de datos que contiene los hemi-cubos de las luminarias. En la imagen cada \underline{columna} representa un hemi-cubo (reordenado como un vector).}
+\label{fig-capDetallesDelMetodo:sortResults}
+\end{figure}
+
+%=================================================================
+\section{Optimización}
+Uno de los algoritmos con que se realiza la optimización está basado en la metaheurística VNS. En este se realizan
+exploraciones sucesivas de los vecindarios seleccionando representantes aleatorios y evaluándolos con el objetivo
+de encontrar una solución mejor a las obtenidas en iteraciones previas. Las variables que pueden ser consideradas
+por VNS son: la posición, la rotación y la distribución de intensidades luminosas de cada luminaria. Las distribuciones
+de intensidades luminosas de las luminarias son agrupadas por cercanía utilizando el ordenamiento obtenido por medio
+del Algoritmo~\ref{alg:sort_alg}. Los vecindarios para las demás variables pueden ser construidos de forma directa.
+En la Sección~\ref{sec:rotaciones} se describe el método utlizado para aplicar rotaciónes a los
+hemi-cubos $\mathbf{I}$. Luego en la Sección~\ref{sec:calculoDeEmitanciaLuminosaDirecta} se detalla cómo se
+realiza el cálculo de la emitancia luminosa directa. En la Sección~\ref{sec:calculoDeLaRadiosidad} se plantean las
+ecuaciones de radiosidad, mostrando cómo se utiliza la emitancia luminosa directa acumulada en su cálculo.
+A continuación, en la Sección~\ref{sec:heuristicas_de_busqueda}, se detallan las heurísticas utilizadas en el proceso
+de optimización para realizar la búsqueda de óptimos. Luego en la Sección~\ref{sec:radiosidad_multiple_candidatos}
+se describe el proceso de evaluación paralela. Por último, en la Sección~\ref{sec:det_implementacion} se brindan
+detalles de la implementación como los lenguajes utilizados y el uso de la luminaria vacía.
+
+%=================================================================
+\section{Rotaciones}\label{sec:rotaciones}
+
+El método presentado utiliza fuentes de luces direccionales, fuentes de luz para las cuales su emisión varía según la
+dirección que sea considerada, y es por esto que es necesario optimizar cómo estas son orientadas en la configuración.
+Cuando se aplican rotaciones se utilizan ángulos de Euler con rotaciones intrínsecas. La elección de este tipo de
+rotaciones es debido a su aplicación intuitiva en este problema, pero podría aplicarse otro tipo de rotación, siempre
+y cuando no resulte demasiado ineficiente de computar. La elección de los ejes utilizados para aplicar las
+rotaciones también fue elegido porque resulta intuitivo su uso en este problema, pero es también posible
+utilizar cualquier otro tipo de variante.
+Las rotaciones intrínsecas seleccionadas se determinan por tres ángulos $z_1$, $y_2$ and $z_3$, como se puede
+ver en la Figura~\ref{fig-capDetallesDelMetodo:rotations}, y son utilizadas para orientar las distribuciones de intensidades
+luminosas de las luminarias. Como se ve en la Figura~\ref{fig-capDetallesDelMetodo:rotations}, el proceso seguido
+para generar las distribuciones rotadas comienza tomando un sistema de ejes inicial. Un ejemplo de hemi-cubo de
+emisión sin aplicar ninguna rotación se muestra en la Figura~\ref{fig-capDetallesDelMetodo:HRot_0_0_0}.
+Luego la primera rotación por $z_1$ grados es realizada sobre el eje original $Z$ produciendo los nuevos ejes
+$X_1Y_1Z_1$ y obteniendo a su vez la luminaria rotada $\mathbf{I}_l^{z}$ (ver Figuras \ref{fig-capDetallesDelMetodo:RotationsZ1} 
+y \ref{fig-capDetallesDelMetodo:HRot_45_0_0}). Luego se aplica nuevamente otra rotación, pero esta vez utilizando
+el ángulo $y_2$ y sobre el eje $Y_1$ (ver Figuras \ref{fig-capDetallesDelMetodo:RotationsY2} y \ref{fig-capDetallesDelMetodo:HRot_45_45_0})
+obteniéndose $\mathbf{I}_l^{zy}$ con un nuevo conjunto de ejes $X_2Y_2Z_2$. Por último se aplica la última rotación,
+esta vez $z_3$ grados sobre el eje $Z_2$ y obteniéndose de esta manera $\mathbf{I}_l^{zyz}$ (ver
+Figuras \ref{fig-capDetallesDelMetodo:RotationsZ3} y \ref{fig-capDetallesDelMetodo:HRot_45_45_45}).
+Estas rotaciones son realizadas durante el proceso de optimización. Hacerlas en la etapa de pre-cómputo implica costos
+computacionales excesivos.
+La metaheurística VNS es utilizada para realizar el control de cómo los ángulos son seleccionados.
+
+\begin{landscape}
+\begin{figure*}[!htp]
+\centering
+\begin{subfigure}[Ejes originales.]
+{\includegraphics[width=0.24\linewidth, trim={7.5cm 1cm 7cm 1cm},clip]{./img/metodo/Rotations0}\label{fig-capDetallesDelMetodo:Rotations0}}
+\end{subfigure}
+\hfill
+\centering
+\begin{subfigure}[Primera rotación, eje Z.]
+{\includegraphics[width=0.24\linewidth, trim={7.5cm 1cm 7cm 1cm},clip]{./img/metodo/RotationsZ1}\label{fig-capDetallesDelMetodo:RotationsZ1}}
+\end{subfigure}
+\hfill
+\centering
+\begin{subfigure}[Segunda rotación, eje Y.]
+{\includegraphics[width=0.24\linewidth, trim={7.5cm 1cm 7cm 1cm},clip]{./img/metodo/RotationsY2}\label{fig-capDetallesDelMetodo:RotationsY2}}
+\end{subfigure}
+\hfill
+\centering
+\begin{subfigure}[Ultima rotación, eje Z.]
+{\includegraphics[width=0.24\linewidth, trim={7.5cm 1cm 7cm 1cm},clip]{./img/metodo/RotationsZ3}\label{fig-capDetallesDelMetodo:RotationsZ3}}
+\end{subfigure}
+
+\begin{subfigure}[$\mathbf{I}_l$, $z_1$=$0$, $y_2$=$0$, $z_3$=$0$.]
+{\includegraphics[width=0.24\linewidth, trim={0cm 0cm 0cm 0cm},clip]{./img/metodo/HRot_0_0_0}\label{fig-capDetallesDelMetodo:HRot_0_0_0}}
+\end{subfigure}
+\hfill
+\begin{subfigure}[$\mathbf{I}_l^{z}$, $z_1$=$45$, $y_2$=$0$, $z_3$=$0$.]
+{\includegraphics[width=0.24\linewidth, trim={0cm 0cm 0cm 0cm},clip]{./img/metodo/HRot_45_0_0}\label{fig-capDetallesDelMetodo:HRot_45_0_0}}
+\end{subfigure}
+\hfill
+\begin{subfigure}[$\mathbf{I}_l^{zy}$, $z_1$=$45$, $y_2$=$45$, $z_3$=$0$.]
+{\includegraphics[width=0.24\linewidth, trim={0cm 0cm 0cm 0cm},clip]{./img/metodo/HRot_45_45_0}\label{fig-capDetallesDelMetodo:HRot_45_45_0}}
+\end{subfigure}
+\hfill
+\begin{subfigure}[$\mathbf{I}_l^{zyz}$, $z_1$=$45$, $y_2$=$45$, $z_3$=$45$.]
+{\includegraphics[width=0.24\linewidth, trim={0cm 0cm 0cm 0cm},clip]{./img/metodo/HRot_45_45_45}\label{fig-capDetallesDelMetodo:HRot_45_45_45}}
+\end{subfigure}
+\mbox{}
+\caption{\label{fig-capDetallesDelMetodo:rotations}La primer fila presenta las rotaciones intrínsecas utilizadas para realizar la orientación de las distribuciones de intensidades luminosas. De izquierda hacia la derecha, se comienza con los ejes originales de un sistema de coordenadas y aplicando las rotaciones según los ángulos $z_1$, $y_2$ and $z_3$ respectivamente. De esta forma se obtienen los ejes de coordenadas $X_3Y_3Z_3$ y la orientación final para la distribución de intensidades luminosas. La segunda fila muestra cómo se ve afectado el hemi-cubo de emisión $\mathbf{I}$ para cada rotación y para la misma luminaria (notar que cada imagen muestra una rotación diferente).}
+\end{figure*}
+\end{landscape}
+
+%=================================================================
+\section{Cálculo de emitancia luminosa directa}
+\label{sec:calculoDeEmitanciaLuminosaDirecta}
+En esta sección se detallan los conceptos involucrados en los cálculos realizados para obtener la primera reflexión
+de la luz que es emitida por una luminaria en la escena. La técnica utilizada está basada en la técnica del hemi-cubo
+y utiliza la información contenida en los archivos fotométricos (previamente procesados). El resultado será la
+primera reflexión de la luz en la escena que será usada como entrada en la ecuación de radiosidad para calcular
+la iluminación final en la escena. Cabe destacar que el uso de múltiples luminarias es sencillo, debiéndose utilizar
+como entrada en la ecuación de radiosidad, la suma de todas las primeras reflexiones de todas las luminarias
+consideradas.
+La Ecuación~\eqref{ec-capDetallesDelMetodo:patchDirectLuminousEmittance} muestra cómo se realiza el cálculo
+de la emitancia luminosa directa $E_{i,l}^{zyz}(p)$ para cada parche $p$ en la escena iluminada por la luminaria
+$l$ que está posicionada en el parche $i$.
+
+\begin{align}
+\label{ec-capDetallesDelMetodo:patchDirectLuminousEmittance}
+E_{i,l}^{zyz}(p) = \frac{R(p)}{A(p)}\sum_{\substack{\{(u,v) : \\ \mathbf{H}_{i}(u,v)=p\}} }\bm{\Delta\Omega}(u, v)\mathbf{I}_l^{zyz}(u, v)
+\end{align}
+
+\noindent donde $p$ es un parche dado en la escena, $R(p)$ su reflectividad difusa, $A(p)$ su área, $\mathbf{H}_{i}$
+es un hemi-cubo de vista de la escena centrado en el parche $i$ (ver Figura~\ref{fig-capDetallesDelMetodo:viewAndIndexes}),
+cada uno de los elementos $(u,v)$ de la matriz $\bm{\Delta\Omega}$ contiene el ángulo sólido (en sr) del
+píxel $(u,v)$ (ver Figura~\eqref{fig-capDetallesDelMetodo:cohenHemicubeFig}).
+$\mathbf{I}_l^{zyz}$ es una matriz donde cada elemento $(u,v)$ contiene la intensidad luminosa medida en
+candelas que pasa a través del píxel $(u,v)$ por la luminaria $l$. La matriz $\mathbf{I}_l^{zyz}(u,v)$ es
+construida utilizando la información contenida en el archivo fotométrico correspondiente a la luminaria $l$, i.e.,
+usando su distribución de intensidades luminosas, asignando el valor que corresponde a la emisión en candelas
+(lm/sr) de la luminaria a cada píxel en el hemi-cubo, y considerando la rotación que se aplicó a la luminaria.
+
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.65\textwidth, trim={2cm 1cm 2.5cm 0cm}, clip]{./img/metodo/cohenHemicube}
+\caption{Bosquejo de ángulos y relaciones necesarias para realizar el cálculo del ángulo solido ($\Delta\Omega$) de un píxel (u,v) con respecto al centro del hemi-cubo (o).}
+\label{fig-capDetallesDelMetodo:cohenHemicubeFig}
+\end{figure}
+
+Cada sumando $\bm{\Delta\Omega}(u,v)\mathbf{I}_l^{zyz}(u, v)$ en la Ecuación~\eqref{ec-capDetallesDelMetodo:patchDirectLuminousEmittance}
+determina el flujo luminoso, i.e., la cantidad de lúmenes, que pasan a través del píxel $(u,v)$, y la sumatoria determina el 
+flujo luminoso incidente (lm) en el parche $p$.
+
+Por otro lado $\bm{\Delta\Omega}(u,v)$ es determinado por la Ecuación~\eqref{ec-capDetallesDelMetodo:deltaSolidAngle}:
+
+\begin{align}
+\label{ec-capDetallesDelMetodo:deltaSolidAngle}
+\bm{\Delta\Omega}(u, v) &= \frac{4\pi\Delta A}{A_{s}}\;\hat{t}\cdot\hat{n}
+\end{align}
+
+En dicha ecuación, $\Delta A$ es el área del píxel $(u,v)$, $A_{s}$ es el área de la esfera de radio $r$ ($4\pi r^2$)
+que está centrada en el punto $o$ (ver Figura~\ref{fig-capDetallesDelMetodo:cohenHemicubeFig}), $\hat{n}$ es
+el vector unitario normal al píxel $(u,v)$ y $\hat{t}$ es el vector unitario centrado en el píxel $(u,v)$ que tiene
+dirección radial (su dirección es desde el centro del píxel al punto $o$). El producto escalar $\hat{t}\cdot\hat{n}$
+determina el coseno del ángulo $\alpha$.
+Por lo tanto la Ecuación~\eqref{ec-capDetallesDelMetodo:deltaSolidAngle} puede ser expresada como sigue:
+
+\begin{align}
+\label{ec-capDetallesDelMetodo:deltaSolidAngleReduced}
+\bm{\Delta\Omega}(u, v) = &\frac{4\pi\Delta A}{4\pi (x^{2} + y^{2} + z^{2})}\frac{1}{\sqrt{x^{2} + y^{2} + z^{2}}} \\ \nonumber
+\textrm{debido a que } r^2=&x^{2} + y^{2} + z^{2} \textrm{ , y }\; \hat{t}\cdot\hat{n}=\frac{1}{\sqrt{x^{2} + y^{2} + z^{2}}} 
+\end{align}
+
+\noindent lo que resulta en la Ecuación~\eqref{ec-capDetallesDelMetodo:candelaToLumen}.
+
+\begin{align}
+\label{ec-capDetallesDelMetodo:candelaToLumen}
+\bm{\Delta\Omega}(u, v) = \frac{\Delta A}{(x^{2} + y^{2} + z^{2} )^{\frac{3}{2}}}
+\end{align}
+
+La suma de todos los $\bm{\Delta\Omega}(u,v)$ es igual a $2\pi$, o sea que cubre la hemi-esfera en su totalidad.
+Finalmente, dado que $E_{i,l}^{zyz}$ es la emitancia luminosa directa (medida en lux), entonces el flujo luminoso 
+incidente en el parche $p$ es dividido por $A(p)$ (determinando así la iluminancia directa) y multiplicado por la 
+reflectividad $R(p)$.
+%=================================================================
+\section{Cálculo de la radiosidad}
+\label{sec:calculoDeLaRadiosidad}
+
+El vector $E_{i,l}^{zyz}$ calculado en la Ecuación~\ref{ec-capDetallesDelMetodo:patchDirectLuminousEmittance}
+es usado como entrada en la ecuación de radiosidad (Ecuación~\ref{ec-capEstadoDelArte:radiosity}) como sigue:
+
+\begin{equation}
+\label{ec-capDetallesDelMetodo:radiosityWithEmissionEquation}
+\tilde{B} = E_{i,l}^{zyz}+\mathbf{Y}(\mathbf{V}^{T}{E_{i,l}^{zyz}})
+\end{equation}
+
+Esta fórmula nos permite realizar miles de evaluaciones de configuraciones en cuestión de minutos. Cuando una configuración
+contiene muchas luminarias, $E_{i,l}^{zyz}$ es reemplazado por la sumatoria de las emisiones de cada luminaria contenida en la
+configuración, dando como resultado la siguiente ecuación:
+%
+\begin{equation}
+\label{ec-capDetallesDelMetodo:radiosityWithEmissionEquation_many}
+\tilde{B} = \hat{E}+\mathbf{Y}(\mathbf{V}^{T}\hat{E}), \quad donde \quad \hat{E} = \sum_{i}{E_{i,l}^{zyz}} \quad i \in \mathbf{U}
+\end{equation}
+%
+$\mathbf{U}$ representa el subconjunto de posiciones donde se está poniendo una luminaria (en la configuración dada)
+y en la sumatoria $l$ es la luminaria que se ubica en la posición $i$.
+
+%=================================================================
+\section{Heurísticas de búsqueda}\label{sec:heuristicas_de_busqueda}
+Existen muchas heurísticas que permiten realizar la búsqueda de candidatos dentro del espacio de búsqueda.
+En esta tesis analizamos dos tipos: el VNS y técnicas de algoritmos evolutivos.
+%----------------------------------------------------------------------------------------------------------------------------------
+\subsection{VNS}
+En esta tesis planteamos y estudiamos el uso de la metaheurística VNS como algoritmo de búsqueda de soluciones al 
+problema de optimización de configuraciones de luminarias. A continuación se detallan las características y mecanismos 
+utilizados en el algoritmo implementado para controlar la metaheurística, mejorando su eficiencia y eficacia en la búsqueda
+del óptimo.
+%----------------------------------------------------------------------------------------------------------------------------------
+\subsubsection{Tabu Search}
+La técnica de Tabu Search~\cite{Glover1997} fue utilizada para evitar que el método recalcule configuraciones
+que fueron previamente visitadas.
+%----------------------------------------------------------------------------------------------------------------------------------
+\subsubsection{Probabilidad de cambio en una variable en la configuración de una luminaria}
+Para configurar una única luminaria en la escena el algoritmo de optimización utiliza seis variables: una para
+seleccionar la luminaria (contiene el índice de la luminaria en la base de datos ordenada), dos para seleccionar la
+posición y las restantes tres para seleccionar la rotación (tres ángulos $z_1$, $y_2$ y $z_3$) a ser aplicada.
+El algoritmo VNS establece la cantidad de variables que pueden ser cambiadas simultáneamente con el objetivo de
+buscar candidatos en el vecindario explorado. Debido a que la cardinalidad de cada una de estas variables
+es diferente, el algoritmo de optimización da mayor probabilidad a aquellas variables que tienen el dominio con
+cardinalidad más grande. La probabilidad de cambio de una variable es calculada comparando el tamaño
+de su dominio con respecto al tamaño del dominio de las demás variables.
+%----------------------------------------------------------------------------------------------------------------------------------
+\subsubsection{Vecindarios}
+Los vecindarios son determinados por dos condiciones: el entorno en que se permite realizar la búsqueda alrededor
+de una cierta variable, y la cantidad de variables simultáneas en las que se permite realizar las búsquedas en
+cierto momento. Las búsquedas dentro de cada variable son aleatorias pero están controladas por dichas condiciones.
+Los valores que pueden tomar dichas condiciones son ajustables y fueron configuradas de la siguiente forma:
+
+\begin{equation}
+\begin{split}
+\textit{entorno de búsqueda} = \{\textit{0.1 0.3 0.5 0.7 1.0}\} \\ 
+\textit{cantidad de variables} = \{\textit{1 3 5 .. v}\} \\
+\textit{donde v es la cantidad máxima de variables simultáneas en la configuración}
+\end{split} 
+\end{equation}
+
+\noindent Por lo tanto existen tantos vecindarios como el número de parejas que podemos armar con los valores de estas
+dos condiciones de búsqueda (su producto cartesiano).
+
+Por ejemplo si se tienen dos variables en la configuración (luminaria $l$ y posición $i$) donde existen 100 luminarias y 50
+posiciones tendremos que los vecindarios se arman como sigue:
+
+\begin{equation}
+\begin{split}
+\textit{cantidad de variables} = \{\textit{1 2 3}\} \\
+\textit{donde tenemos los vecindarios} \\
+\{\textit{\{0.1,1\} \{0.1,2\} \{0.1,3\} \{0.3,1\} \{0.3,2\} \{0.3,3\} \{0.5,1\} \{0.5,2\}} \\
+\textit{\{0.5,3\} \{0.7,1\} \{0.7,2\} \{0.7,3\} \{1.0,1\} \{1.0,2\} \{1.0,3\}}\}\\
+\end{split} 
+\end{equation}
+
+\noindent Por lo tanto si se está realizando la búsqueda en el vecindario \textit{\{0.5,2\}} se buscarán individuos aleatoriamente
+cambiando tanto su posición como su luminaria y donde la luminaria esté en un entorno de [$l-50$,$l+50$] y posición [$i-25$,$i+25$],
+o sea buscando alrededor de los valores que posee la mejor solución encontrada hasta el momento en ambas variables.
+%----------------------------------------------------------------------------------------------------------------------------------
+\subsubsection{Selección de variables que determinan un vecindario}
+El orden en que se recorren dichos vecindarios no es aleatorio. Para hacer la recorrida se cambia la combinación de
+parejas de forma que en cada transición del vecindario se cambia el miembro de la pareja que no cambió en la transición
+anterior. Esto se hace recorriendo la matriz por sus diagonales, formada por el producto cartesiano de los valores de las
+condiciones, como se muestra en la Figura~\ref{fig-capDetallesDelMetodo:vecindariosEjemplo}.
+
+\begin{figure}[htb]
+\centering
+{\includegraphics[width=0.6\textwidth, trim={1cm 6.5cm 2cm 5.7cm}, clip]{./img/metodo/VecindariosEjemplo}}
+\caption{\label{fig-capDetallesDelMetodo:vecindariosEjemplo}Navegación para el caso donde se tienen los tamaños de vecindarios \{\textit{0.1 0.3 0.5 0.7 1}\} y 3 variables en la solución. La navegación determina cómo se seleccionan las variables que determinan un vecindario.}
+\end{figure}
+
+En el ejemplo presentado en la Figura~\ref{fig-capDetallesDelMetodo:vecindariosEjemplo} los vecindarios se recorren
+en el siguiente orden: \textit{\{0.1,1\}, \{0.3,1\}, \{0.1,2\}, \{0.5,1\}, \{0.3,2\}, \{0.1,3\}, \{0.7,1\}, \{0.5,2\}, \{0.3,3\}, \{1,1\}, \{0.7,2\}, \{0.5,3\}, \{1,2\}, \{0.7,3\}, \{1,3\}}.
+%----------------------------------------------------------------------------------------------------------------------------------
+\subsubsection{Cambio de vecindario al encontrar una mejor solución}
+Al realizar la búsqueda dentro de un vecindario si se encuentra una solución mejor al óptimo actual, se deben recentrar
+los vecindarios a partir del nuevo óptimo.
+Sin embargo, en la variante del algoritmo implementado en esta tesis, al encontrar dicha condición se permite continuar
+la exploración del vecindario actual con el objetivo de no parar ante la primer mejora del valor a optimizar encontrada.
+%----------------------------------------------------------------------------------------------------------------------------------
+\subsection{Algoritmos Evolutivos}
+En esta tesis planteamos el uso de un algoritmo evolutivo que resuelve el ILP presentado en la tesis por medio del 
+solver GA \cite{matlabGASolver}. Este algoritmo es utilizado en problemas de optimización, y es basado en el proceso
+de selección natural simulando la evolución biológica.
+El algoritmo consiste en modificar repetidamente las poblaciones de individuos cruzándolos para generar nuevas
+generaciones intentando obtener mejores características en los individuos.
+
+Los pasos para utilizar este tipo de algoritmos requiere decidir e implementar la forma en que las soluciones son
+representadas, el algoritmo de generación de la población inicial, la función de fitness que evaluará la aptitud
+de un individuo en la población y los operadores evolutivos (tipo de selección, recombinación y mutación).
+
+\subsubsection{Representación de las soluciones}
+En el problema planteado es necesario encontrar la combinación de ubicación y tipo de luminaria (emisión) 
+para cada una de las luminarias que deben ser utilizadas, por lo tanto en la representación de una luminaria se 
+debe contener la ubicación de la luminaria y su tipo. Las superficies donde se pueden ubicar las luminarias pueden
+ser solamente superficies planas y de forma rectangular. De esta manera, para ubicar la luminaria, se toman las
+coordenadas $x$ e $y$ que esta tendrá en la superficie objetivo (dominio de parches donde es posible ubicar
+las luminarias). Por otro lado para representar la luminaria se utiliza su índice en la base de datos. Por lo tanto
+la configuración de una luminaria es representada como sigue:
+
+\begin{equation}
+\begin{cases}
+lum = (x, y, l) \\
+x \in 1..X, X \in \hspace{0.2cm} $$\mathbb{N}$$ \\
+y \in 1..Y, Y \in \hspace{0.2cm} $$\mathbb{N}$$ \\
+l \in 1..L, L \in \hspace{0.2cm} $$\mathbb{N}$$ 
+\end{cases}
+\end{equation}
+
+Donde X e Y representan la cantidad máxima de posiciones distintas según el eje $x$ de la superficie objetivo e 
+$y$ respectivamente, y donde $L$ representa la cantidad de luminarias existentes en la base de datos.
+En este problema es necesario poder calcular soluciones con múltiples luminarias y por lo tanto la solución es 
+representada de la siguiente forma:
+
+\begin{equation}
+\begin{cases}
+sol = (x_{1}, y_{1}, l_{1}, ..., x_{i}, y_{i}, l_{i}, ..., x_{n}, y_{n}, l_{n}) \\
+x_{i} \in 1..X, X \in \hspace{0.2cm} $$\mathbb{N}$$ \\
+y_{i} \in 1..Y, Y \in \hspace{0.2cm} $$\mathbb{N}$$ \\
+l_{i} \in 1..L, L \in \hspace{0.2cm} $$\mathbb{N}$$ \\
+n \in \hspace{0.2cm} $$\mathbb{N}$$, n $$>$$ 0
+\end{cases}
+\end{equation}
+
+\subsubsection{Población inicial}
+La población inicial será generada tomando individuos de forma arbitraria.
+
+\subsubsection{Operadores evolutivos}
+\label{subsec:operadores_evolutivos}
+En cuanto a los operadores evolutivos, se utilizará la selección por torneo con 2 individuos.
+Para la combinación se utiliza Cruzamiento de dos Puntos (2PX) y por último para la mutación se realiza el cambio
+de un alelo por otro de forma aleatoria seleccionando dentro de los rangos de valores posibles para la variable 
+(mínimos y máximos valores posibles) con una distribución uniforme.
+
+Es importante destacar que cuando se utilizan métodos de algoritmos evolutivos para realizar la búsqueda de
+óptimos, no es necesario que la base de datos de luminarias esté ordenada, debido a que el algoritmo no hará
+uso de dicha información.
+%----------------------------------------------------------------------------------------------------------------------------------
+%=================================================================
+\section{Cálculo de la radiosidad para múltiples candidatos}\label{sec:radiosidad_multiple_candidatos}
+En esta tesis también incorporamos el uso del VNS con búsquedas paralelas. Esta técnica mejora el desempeño 
+computacional del algoritmo dando mejores resultados en los tiempos totales que toma realizar las búsquedas de
+configuraciones óptimas.
+En esta mejora de performance, una matriz $\mathbf{E}$ que contiene la emisión de cada candidato ($\mathbf{E}=[E_1,...,E_p]$,
+donde $p$ es la cantidad de individuos evaluados en paralelo) es construida con el objetivo de realizar una evaluación paralela
+de todos los candidatos dentro de un mismo vecindario. Los resultados que se obtienen en la matriz $\mathbf{\tilde{B}}$
+contienen cada vector $\tilde{B}$ de la ecuación descrita en la Sección~\ref{sec:calculoDeLaRadiosidad}, ver
+Ecuación~\eqref{ec-capDetallesDelMetodo:radiosityWithEmissionEquationParallel}.
+
+\begin{equation}
+\label{ec-capDetallesDelMetodo:radiosityWithEmissionEquationParallel}
+\mathbf{\tilde{B}} = \mathbf{E} + \mathbf{Y}(\mathbf{V}^{T}\mathbf{E})
+\end{equation}
+
+En el Anexo~\ref{anexoALN} se desarrollan algunos de los conceptos y algoritmos de paralelismo que pueden
+ser aplicados a la metaheurística VNS. En dicho Anexo se estudia el uso del paralelismo aplicado al VNS utilizando
+emisores lambertianos en lugar de la información de los archivos fotométricos de las luminarias.
+%=================================================================
+\section{Detalles sobre la implementación}\label{sec:det_implementacion}
+La mayoría del código y herramientas implementadas fueron escritos en el lenguaje MATLAB. También se usó C++
+y OpenGL para la visualización y cálculo de los hemi-cubos de vista o los renderizados de las emisiones.
+%----------------------------------------------------------------------------------------------------------------------------------
+\paragraph{Luminaria vacía}
+Para no obligar al algoritmo a utilizar todas las luminarias pedidas en un problema, sino un número menor o igual
+(por ejemplo, si se quieren poner 3 luminarias, que el algoritmo pueda poner 2 o 1, si así se obtienen mejores resultados),
+introducimos el concepto de luminaria vacía. 
+Esta luminaria sirve para relajar la cantidad de luminarias indicadas en el algoritmo.
+El algoritmo puede utilizar esta luminaria (que consume 0 watts y no produce ningún tipo de emisión) de forma
+que es posible conseguir configuraciones válidas con menor o igual cantidad de luminarias que las posibles en una configuración.
+Esta luminaria posee un hemi-cubo $\mathbf{I}_0$ donde cada píxel contiene el valor 0 y es evaluada al momento de
+ordenar las luminarias para conocer cuándo esta debe ser considerada en los vecindarios.
+%=================================================================
+% end of chapter

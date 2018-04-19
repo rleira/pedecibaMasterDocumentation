@@ -1,0 +1,16 @@
+\newcommand{\theoremname}{Teorema}
+\newcommand{\lemmaname}{Lema}
+\newcommand{\corollaryname}{Corolario}
+\newcommand{\propositionname}{Proposici\'on}
+\newcommand{\conjecturename}{Conjetura}
+\newcommand{\definitionname}{Definici\'on}
+\newcommand{\examplename}{Ejemplo}
+\newcommand{\problemname}{Problema}
+\newcommand{\exercisename}{Ejercicio}
+\newcommand{\notationname}{Notaci\'on}
+%\newcommand{\algorithmname}{Algoritmo}
+\newcommand{\notename}{Nota}
+\newcommand{\acknowledgmentname}{Reconocimiento}
+\newcommand{\remarkname}{Observaci\'on}
+\newcommand{\claimname}{Claim}
+\newcommand{\solutionname}{Soluci\'on}

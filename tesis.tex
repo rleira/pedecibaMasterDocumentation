@@ -1,0 +1,387 @@
+%!TeX encoding = ISO-8859-1
+\documentclass[a4paper,twoside,11pt]{book}
+\usepackage[latin1]{inputenc}
+\usepackage[spanish,activeacute]{babel}
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{ifthen}
+\usepackage{inc/fancyhdr}
+\usepackage{subfigure}
+\usepackage[font=footnotesize,labelfont=bf]{caption}
+\usepackage{amsmath}
+%\usepackage{fancyheadings}
+\usepackage{makeidx}
+\usepackage{setspace}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\floatname{algorithm}{Algoritmo}
+\usepackage{inc/symbols}
+\usepackage{url}
+\usepackage[chapter]{inc/theorems}
+\newtheorem{teo}{Teorema}[section]
+\newtheorem{cor}{Corolario}[section]
+\usepackage[latin1]{inputenc}
+\usepackage[spanish,activeacute]{babel}
+\usepackage{pdfpages}
+\usepackage{verbatim}
+\usepackage{appendix}
+\usepackage{enumitem}
+\usepackage{bm} % used for instance for \bm{\Delta\Omega}
+%\usepackage{abstyles-babel}
+
+
+
+% Tablas
+\usepackage[para,online,flushleft]{threeparttable}
+\usepackage{multicol}
+\usepackage{multirow}
+
+%landscape on pages
+\usepackage{lscape}
+
+\usepackage[section]{placeins}
+%%\usepackage[pdftex]{graphicx}
+%%\usepackage[pdftex]{hyperref}
+\pagestyle{fancy}
+%\renewcommand{\bibname}{Referencias bibliogr\'aficas}
+
+%\onehalfspacing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\renewcommand{\chaptermark}[1]{\markboth{#1}{}}
+%\renewcommand{\sectionmark}[1]{\markright{\thesection\ #1}}
+%\renewcommand{\sectionmark}[1]{\markleft{\thesection\ #1}}
+%\renewcommand{\sectionmark}[1]{\markboth{\thesection\ #1}{\thesection\ #1}}
+%\fancyhf{}
+%\fancyhead[RO,LE]{\bfseries\thepage}
+%\fancyhead[RE]{\bfseries\leftmark}
+%\fancyhead[LO]{\bfseries\rightmark}
+%\fancyhead[RE]{\bfseries\leftmark}
+%\renewcommand{\headrulewidth}{0.5pt}
+%\renewcommand{\footrulewidth}{0pt}
+%\addtolength{\headheight}{0.5pt}
+%\fancypagestyle{plain}{%
+%  \fancyhead{}
+%  \renewcommand{\headrulewidth}{0pt}
+%}
+
+\renewcommand{\appendixname}{Apéndices}
+\renewcommand{\appendixtocname}{Apéndices}
+\renewcommand{\appendixpagename}{Apéndices}
+
+\newcommand{\irow}[1]{% inline row vector
+\begin{matrix}(#1)\end{matrix}%
+}
+
+\addtolength{\headwidth}{\marginparsep}
+%\addtolength{\oddsidemargin}{1cm}
+%\addtolength{\evensidemargin}{-2.5cm}
+
+\addtolength{\headwidth}{\marginparwidth}
+
+
+\renewcommand{\chaptermark}[1]{\markboth{#1}{}}
+\renewcommand{\sectionmark}[1]%
+    {\markright{\thesection\ #1}}
+\lhead[\fancyplain{}{\bfseries\thepage}]%
+    {\fancyplain{}{\bfseries\rightmark}}
+\rhead[\fancyplain{}{\bfseries\leftmark}]%
+    {\fancyplain{}{\bfseries\thepage}}
+\cfoot{}
+%\addtolength{\oddsidemargin}{-1cm}
+%\addtolength{\evensidemargin}{2.5cm}
+\makeatletter
+\def\cleardoublepage{\clearpage\if@twoside \ifodd\c@page\else%
+    \hbox{}%
+    \thispagestyle{empty}%              % Empty header styles
+    \newpage%
+    \if@twocolumn\hbox{}\newpage\fi\fi\fi}
+\makeatother
+
+\makeindex
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\bibliographystyle{plain}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\bibliographystyle{plain}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\def\maketitlelo{
+ \null
+ \thispagestyle{empty}
+ \addtolength{\oddsidemargin}{-1cm}
+ \addtolength{\textwidth}{2cm}
+ \vfill
+ \begin{center}\leavevmode
+ \normalfont
+ \vskip 0.5cm
+ \textsc{\Huge PEDECIBA INFORMÁTICA}
+ \textsc{\Large Instituto de Computación, Facultad de Ingeniería}
+
+ \textsc{\Large Universidad de la República}
+
+ \textsc{\Large Montevideo, Uruguay}
+
+
+ \vskip 2cm
+ \textsc{\Huge TESIS DE MAESTRÍA}
+
+ \textsc{\Huge EN INFORMÁTICA}
+
+ \vskip 2cm
+ \textbf{{\huge Resolución de Problemas Inversos de Iluminación Considerando Datos Fotométricos}}
+% \vskip .4cm
+% \textbf{{\huge ZZZZZZZZ}}
+ \vskip 0.5cm
+ \vskip 1cm
+ {\Large Rodrigo Leira}
+
+ {\Large rodrigoleira10$@$hotmail.com.uy}
+ \vskip 1.5cm
+
+ {\large {6 de Abril de 2018}}
+ \vskip 1.5cm
+
+\begin{table}[!h]
+\centering {\Large
+\renewcommand{\tabcolsep}{18pt}
+\begin{tabular}{ll}
+Dr. Eduardo Fernández&Director académico y tutor de tesis\\
+Dr. Gonzalo Besuievsky&Co-tutor de tesis\\
+Dr. Francisco José Serón Arbeloa &Revisor\\
+Dr. Pedro Piñeyro&\\
+Dr. Marcos Viera&\\
+
+\end{tabular}
+}
+\end{table}
+
+\end{center}
+\vfill \null
+\newpage
+ \thispagestyle{empty}
+ \vfill
+ \mbox{}
+ \vfill
+ \null
+
+}
+
+\def\makerelated{
+  \newpage
+  \thispagestyle{empty}
+  \textbf{\Huge }
+  \vskip 2.5cm
+  \textbf{\Huge Publicaciones relacionadas}
+  \vskip 1.5cm
+
+Esta tesis comprende las siguientes publicaciones y expande algunas de estas:
+  \vskip 1cm
+
+\begin{itemize}
+ \item Rodrigo Leira y Eduardo Fern{\'{a}}ndez y Gonzalo Besuievsky \textit{Calculation of Optimal Luminaires for Architectural Design}. Proceedings of the 12th International Joint Conference on Computer Vision, Imaging and Computer Graphics Theory and Applications - Volume 1: GRAPP, (VISIGRAPP 2017), Oporto, Portugal, P{\'{a}}ginas 203-211.
+ \item Ignacio Decia and Rodrigo Leira and Mart{\'{\i}}n Pedemonte and Eduardo Fern{\'{a}}ndez and Pablo Ezzatti  \textit{A VNS with Parallel Evaluation of Solutions for the Inverse Lighting Problem}. Applications of Evolutionary Computation - 20th European Conference, EvoApplications 2017, Amsterdam, The Netherlands, April 19-21, 2017, Proceedings, Part {I}, P{\'{a}}ginas 741-756.
+\end{itemize}
+
+\vfill \null
+\newpage
+ \thispagestyle{empty}
+ \vfill
+ \mbox{}
+ \vfill
+ \null
+  }
+
+
+\def\makeresumen{
+  \newpage
+  \thispagestyle{empty}
+  \addtolength{\oddsidemargin}{-1cm}
+  \addtolength{\textwidth}{2cm}
+  \begin{center}\leavevmode
+    \normalfont
+%    \textbf{\huge Configuración Óptima de Luminarias}
+%    \vskip 0.2cm
+%     \textbf{\huge zzzzzzzzzzzzzzzzzzzzzzzzzzzz}
+%    \vskip 0.9cm
+    \textbf{\huge Resumen}
+   \end{center}
+    \vskip 0.7cm
+    \textrm{
+En el diseño arquitectónico, a los objetivos estéticos y de confort visual se han agregado aquellos relacionados con la eficiencia energética y el cumplimiento de estándares de calidad en la iluminación. Este cambio de paradigmas hace relevante el estudio y desarrollo de técnicas computacionales que ayuden en la búsqueda de buenas configuraciones de luminarias. Considerar estos nuevos objetivos durante el proceso de diseño sin las herramientas adecuadas resulta ineficiente, porque está basado principalmente en el proceso de prueba y error y en la experiencia del diseñador. Las herramientas de CAD existentes generan resultados a partir de configuraciones proporcionadas por el diseñador, sin brindar nuevas soluciones. Debido a esto surge la necesidad de otro tipo de herramienta que se base en las intenciones del diseñador para generar configuraciones de luminarias adecuadas.
+}
+\vskip 0.2cm
+\textrm{
+Esta tesis se centra en el desarrollo de nuevas y eficientes heurísticas que tengan en cuenta las propiedades fotométricas de luminarias reales, así como su ubicación y orientación. Las intenciones de iluminación (LI) del diseñador se definen como objetivos y restricciones a satisfacer, y son tratadas como problemas de optimización denominados problemas inversos de iluminación (ILP). Las configuraciones obtenidas son el punto de partida para el diseñador, dado que podrá modificarlas para contemplar otros aspectos más difíciles de modelar matemáticamente.
+}
+\vskip 0.2cm
+\textrm{
+Desde el punto de vista de los métodos de iluminación global, las técnicas propuestas utilizan la ecuación de radiosidad. Se simula la emisión de la luz de las luminarias y a través de la ecuación de radiosidad se calcula cuánta luz llega a cada parche de la escena.
+}
+\vskip 0.2cm
+\textrm{
+Se realizaron experimentos centrados en la mejora de la iluminación en el edificio Palacio de los Tribunales (Poder Judicial), donde se comparan los resultados obtenidos con aquellos propuestos por diseñadores y se muestra que las heurísticas desarrolladas tienen el potencial de facilitar el proceso de diseño de iluminación.
+Un análisis general muestra que las técnicas implementadas son capaces de obtener buenas soluciones en el conjunto de problemas estudiado, y de obtener tiempos de ejecución adecuados para este tipo de problemas. Por tanto, estas técnicas podrían ser utilizadas como herramientas de apoyo al proceso de diseño arquitectónico. 
+ }
+    \vskip 1.2cm
+\textbf{ Palabras Clave: } optimización, problema inverso de iluminación, intenciones de iluminación, radiosidad, fotometría, archivos fotométricos, luminarias.
+  \vfill
+  \null
+%\newpage
+%  \thispagestyle{empty}
+%  \vfill
+%  \mbox{}
+%  \vfill
+%  \null
+
+ % \cleardoublepage
+  }
+
+
+\def\maketabref{
+  \null
+  \pagebreak
+  \thispagestyle{empty}
+    \leavevmode
+    \normalfont
+    \textbf{\huge Índice de principales conceptos}
+     \vskip 1.5cm
+   \begin{table}[!h]
+    \renewcommand{\tabcolsep}{18pt}
+    \begin{tabular}{lll}
+ {\color{red}ejemplo concepto importante} & XX \\
+
+    \end{tabular}
+   \end{table}
+
+%  \vfill
+%  \null
+\newpage
+\thispagestyle{empty}
+%  \vfill
+%  \mbox{}
+%  \vfill
+%  \null
+
+ % \cleardoublepage
+  }
+
+
+
+%%\title{}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\hyphenation{e-va-luar-los} \hyphenation{pro-ba-bi-li-dad}
+\hyphenation{de-sa-rro-lla-dos} \hyphenation{di-fe-ren-tes}
+\hyphenation{par-ches de-sa-rro-llo o-pe-ra-do-res
+ex-pe-ri-men-tar re-le-van-tes Ve-ne-zue-la a-pro-xi-ma-das
+va-lo-res ge-ne-ra-dos co-no-ci-mien-to re-la-ti-va-men-te
+co-rres-pon-de cua-tro co-rres-pon-dien-tes ma-ne-ra re-a-li-za
+de-sa-rro-lla-do cua-dra-tu-ras cum-pli-das mo-de-la-do E-xis-ten
+ra-zo-na-mien-tos co-rres-pon-de ex-pe-ri-men-tal
+fac-to-ri-za-cio-nes de-sa-rro-lla-da a-pro-xi-ma-do
+re-a-li-zan-do pro-pues-tas sin-gu-la-ri-da-des
+a-pro-xi-ma-cio-nes pro-pues-tas sin-gu-la-ri-da-des}
+\addto\captionsspanish{\def\tablename{Tabla}}
+
+
+\topmargin -45 true pt \textheight = 650pt
+\addtolength{\oddsidemargin}{1cm}
+\addtolength{\evensidemargin}{-2.5cm}
+\addtolength{\textwidth}{2cm}
+\DeclareMathOperator*{\flecha}{$\longrightarrow$}
+\begin{document}
+\pagenumbering{roman}
+\begin{titlepage}
+\maketitlelo
+\end{titlepage}
+\setcounter{page}{1}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% RELATED PAPERS
+\makerelated
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% RESUMEN
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\makeresumen
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\tableofcontents
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\maketabref
+\listoffigures
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\listofalgorithms
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\listoftables
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\cleardoublepage
+
+\mainmatter \setcounter{page}{1} \pagenumbering{arabic}
+
+
+%% Acknowledgments
+\newpage
+    \thispagestyle{empty}
+    \textbf{\Huge  }
+    \vskip 2.5cm
+    \textbf{\Huge Agradecimientos}
+    \vskip 1.5cm
+{
+
+Quiero agradecer enormemente a mis tutores por toda la paciencia que me tuvieron en este largo camino que ha sido el desarrollo de esta tesis. A Gonzalo por su buena onda y por siempre estar en las charlas de como encaminar el trabajo, siempre dando consejos. Y a Eduardo, por todo, por estar siempre cuando tenía una pregunta, siempre con paciencia y mucha sabiduría. Sin toda su ayuda el desarrollo de esta maestría no habría sido posible.
+
+También quiero agradecer a la Universidad de la República Oriental del Uruguay y a la Agencia Nacional de Investigación por financiar el viaje a España y Portugal para participar en el congreso donde se presentó parte del trabajo de esta tesis.
+
+También quiero agradecer a todos los amigos que me dieron una mano para que todo esto salga adelante, siempre sacándome una sonrisa y haciendo los momentos más llevaderos.
+
+Muy especialmente, y por ultimo pero no menos importante, estoy inmensamente agradecido a toda mi familia por aguantarme todo este tiempo, a mi madre por haberme dado tanto en todo no solo durante estos años y también mi hermano por haber bancado todos mis malos humores y acompañarme todo este tiempo.
+
+
+}
+
+\hspace{11.6cm} Rodrigo Leira
+%\include{agradecimientos}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% INTRODUCCION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\include{caps/CapIntro}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\include{caps/CapEstadoDelArte}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\include{caps/CAPDetallesDelMetodo}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\include{caps/CAPAnalisisExperimental}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% CONCLUSIONES Y TRABAJO FUTURO
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\include{caps/CAPConclusionesTrabFuturo}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% BIBLIOGRAFIA
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\addcontentsline{toc}{chapter}{Referencias bibliogr\'aficas}
+%\nocite{*}
+\bibliographystyle{unsrt}
+%{aplain}
+\bibliography{caps/biblo}
+\printindex
+
+%% Anexos?
+\appendix
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\include{anexos/anexos}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\include{anexos/anexoALN}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\include{anexos/anexoEA}
+\end{document}

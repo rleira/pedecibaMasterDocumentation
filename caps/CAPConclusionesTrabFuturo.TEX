@@ -1,0 +1,70 @@
+%!TeX encoding = ISO-8859-1
+\chapter{Conclusiones y trabajo futuro}\label{capConclusionesTrabFuturo}
+
+%=================================================================
+\section{Conclusiones}
+En esta tesis se introduce un método que resuelve problemas inversos de iluminación como problemas de
+optimización. La optimización de la iluminación en una escena considera como variables la posición, la orientación
+y el tipo de luminaria utilizada (su emisión). Se utiliza una base de datos que consiste de miles de luminarias
+distintas, y se consideran cientos de posiciones y orientaciones (rotaciones) distintas.
+Este método posibilita la inclusión de luminarias complejas, cuyas emisiones están definidas por archivos fotométricos
+que aproximan la emisión real de las mismas. Debido a esto, es necesario también contemplar la orientación de
+dichas luminarias.
+
+Los resultados obtenidos cuando se orientan las luminarias muestran ser mejores en algunos experimentos,
+aumentando los tiempos de ejecución de estos. Esto último es debido al gran incremento que se produce en el
+tamaño del dominio de soluciones y a los cálculos realizados en cada iteración para calcular la iluminación.
+Por otra parte estos tiempos siguen siendo viables para su uso en el tipo de problemas estudiado.
+De la evaluación experimental se deduce que agregar rotaciones puede no ser la mejor opción en todos los casos.
+Por tanto, el uso de rotaciones debe ser evaluado para cada problema.
+
+Si bien el método de radiosidad tiene sus debilidades frente a otras técnicas de iluminación global, como por
+ejemplo el que solo se puedan incluir superficies lambertianas, posee como una enorme fortaleza su velocidad
+de cálculo (que en nuestro caso fue además acelerado usando LRR). Esta ventaja comparativa permite resolver
+problemas de optimización con miles de cálculos de iluminación global, que por medio de otros métodos resultarían
+prohibitivos.
+
+Los resultados obtenidos por el método fueron utilizados como entrada en Dialux, utilizado por los
+diseñadores de iluminación para obtener variedad de datos a partir de las configuraciones de luminarias en la
+escena.
+Los diseñadores de iluminación pueden utilizar este nuevo recurso para partir de soluciones
+iniciales que satisfacen sus intenciones de iluminación, y luego iterando sobre ellas alcanzar las soluciones definitivas. 
+
+En los experimentos, el algoritmo considera dominios de hasta $10^{21}$ configuraciones, y encuentra buenas
+soluciones luego de evaluar no más de $10^{5}$ de ellas.
+
+El ordenamiento de las luminarias funciona adecuadamente y facilita enormemente la introducción del tipo
+de luminaria como una variable más en el proceso de optimización. Esta técnica permite trabajar con total
+facilidad con conjuntos enormes de luminarias, aspecto no observado anteriormente en la literatura.
+
+Una versión simplificada de algoritmo evolutivo fue implementada y comparada con VNS para determinar
+cuál de estos resulta mejor para la búsqueda de óptimos. Los resultados experimentales obtenidos no
+superan a los obtenidos con VNS, pero resultaron aceptables y alentadores. Es posible que los algoritmos
+evolutivos brinden resultados mucho mejores, si se realizan las mejoras adecuadas en el código. 
+
+El algoritmo fue probado en dos formas diferentes. Por un lado se evaluó su capacidad para aportar
+soluciones iniciales, y se lo comparó con las soluciones iniciales brindadas por los diseñadores. Por otra
+parte, se intentó mejorar una solución inicial brindada por los diseñadores. 
+Los resultados de ambos experimentos fueron exitosos, retornando en ambos casos buenas configuraciones
+que cumplen estrictamente con los objetivos de intensidad y uniformidad de la iluminación y/o brindan
+mayores ahorros energéticos.
+Con esto se comprueba el potencial de los métodos implementados para brindar soluciones y hacer
+recomendaciones primarias a los diseñadores. Su inclusión en el proceso de diseño de iluminación
+dependerá de la facilidad con que se salve el abismo que separa los prototipos de las aplicaciones
+profesionales.
+%=================================================================
+\section{Trabajo futuro}
+Las principales líneas de trabajo futuro vislumbradas en esta tesis son:
+\begin{itemize}
+\item Ampliar las técnicas desarrolladas para contemplar también la existencia de luz natural en los espacios a iluminar.
+\item Clasificar las luminarias según el tipo de rotación permitida para cada una de ellas, y utilizar esta información en la optimización. Por ejemplo, existen luminarias que solo deben rotarse en el eje vertical.
+\item Realizar un cálculo de la iluminación global que contemple la distribución espectral de la luz.
+\item Extender el análisis a escenas más complejas, para cuantificar mejor las posibilidades y limitaciones de las técnicas desarrolladas.
+\item Estudiar el efecto que la discretización de los hemi-cubos, tanto de vista como de emisión, tiene sobre el cálculo de la iluminación de la escena.
+\item Estudiar métodos alternativos al del hemi-cubo para realizar el cálculo de la interacción de la luz emitida por la luminaria en la escena.
+\item Analizar problemas multi-objetivo. En esta tesis se trabaja con problemas mono-objetivo, utilizando restricciones para modelar otras intenciones de iluminación y así orientar las búsquedas. Un ejemplo de problema multi-objetivo es el de maximizar la uniformidad de la iluminación mientras se minimiza el consumo eléctrico.
+\item Algunas mejoras pueden ser aplicables al algoritmo evolutivo implementado. Un ejemplo de esto es la evaluación de nuevos operadores evolutivos más complejos, realizando el respectivo estudio y ajuste paramétrico. Otra posible mejora puede ser el uso de otro framework de algoritmos evolutivos que permita la utilización de algoritmos evolutivos paralelos, por ejemplo MALLBA~\cite{mallba}, combinado con el código existente para el cálculo de la radiosidad.
+\end{itemize}
+
+% end of chapter
+

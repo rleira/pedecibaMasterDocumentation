@@ -1,0 +1,703 @@
+\begin{thebibliography}{100}
+
+\bibitem{Pedresen2013}
+S.~A. Pedersen.
+\newblock Progressive photon mapping on gpus.
+\newblock Master's thesis, 2013.
+
+\bibitem{Talbi2009}
+E.~Talbi.
+\newblock {\em Metaheuristics: From Design to Implementation}.
+\newblock Wiley Publishing, 2009.
+
+\bibitem{Koziel2011}
+S.~Koziel and X.~S. Yang.
+\newblock {\em Computational Optimization, Methods and Algorithms}.
+\newblock Studies in Computational Intelligence. Springer Berlin Heidelberg,
+  2011.
+
+\bibitem{Moore2000}
+G.~E. Moore.
+\newblock Readings in computer architecture.
+\newblock chapter Cramming More Components Onto Integrated Circuits, pages
+  56--59. Morgan Kaufmann Publishers Inc., San Francisco, CA, USA, 2000.
+
+\bibitem{Ritschel2012}
+T.~Ritschel, C.~Dachsbacher, T.~Grosch, and J.~Kautz.
+\newblock The state of the art in interactive global illumination.
+\newblock {\em Comput. Graph. Forum}, 31(1):160--188, 2012.
+
+\bibitem{Contensin2002}
+M.~Contensin.
+\newblock Inverse lighting problem in radiosity.
+\newblock {\em Inverse Problems in Engineering}, 10(2):131--152, 2002.
+
+\bibitem{Patow2003}
+G.~Patow and X.~Pueyo.
+\newblock A survey of inverse rendering problems.
+\newblock {\em Computer Graphics Forum}, pages 663--687, 2003.
+
+\bibitem{Fernandez2014}
+E.~Fern\'{a}ndez.
+\newblock {\em Efficient Global Illumination Calculation for Inverse Lighting
+  Problems}.
+\newblock PhD thesis, Universidad de la Republica, February 2014.
+
+\bibitem{Korte2007}
+B.~Korte and J.~Vygen.
+\newblock {\em Combinatorial Optimization: Theory and Algorithms}.
+\newblock Springer Publishing Company, Incorporated, 4th edition, 2007.
+
+\bibitem{Whitted1980}
+T.~Whitted.
+\newblock An improved illumination model for shaded display.
+\newblock {\em Communications of the ACM}, 23(6):343--349, 1980.
+
+\bibitem{Jensen1996}
+H.~W. Jensen.
+\newblock Global illumination using photon maps.
+\newblock In {\em Proceedings of the eurographics workshop on Rendering
+  techniques '96}, pages 21--30, London, UK, UK, 1996. Springer-Verlag.
+
+\bibitem{Goral1984}
+C.~Goral, K.~Torrance, D.~Greenberg, and B.~Battaile.
+\newblock Modeling the interaction of light between diffuse surfaces.
+\newblock {\em ACM SIGGRAPH Computer Graphics Quarterly}, 18(3):213--222, 1984.
+
+\bibitem{Cohen1993}
+M.~Cohen, J.~Wallace, and P.~Hanrahan.
+\newblock {\em Radiosity and realistic image synthesis}.
+\newblock Academic Press Professional, Inc., San Diego, CA, USA, 1993.
+
+\bibitem{russell2012architecture}
+S.~Russell.
+\newblock {\em The Architecture of Light - Architectural Lighting Design
+  Concepts and Techniques: A Textbook of Procedures and Practices for the
+  Architect, Interior Designer and Lighting Designer}.
+\newblock Conceptnine, 2012.
+
+\bibitem{dialux}
+DIALux.
+\newblock Dial. light building software. http://www.dial.de, April 2016.
+
+\bibitem{Relux}
+Relux.
+\newblock Relux. lighting simulation tools. http://www.relux.biz, April 2016.
+
+\bibitem{Marschner1998}
+S.~R. Marschner.
+\newblock {\em Inverse Rendering for Computer Graphics}.
+\newblock PhD thesis, Ithaca, NY, USA, 1998.
+
+\bibitem{Shariful2010}
+S.~H. Shikder, M.~M. Mourshed, and A.~D.~F. Price.
+\newblock Luminaire position optimization using radiance based simulation: a
+  test case of a senior living room.
+\newblock In {\em Computing in Civil and Building Engineering}, 2010.
+
+\bibitem{Uygun2015}
+I.~E. Uygun, Z.~T. Kazanasmaz, and S.~Kale.
+\newblock Optimization of energy efficient luminaire layout design in
+  workspaces.
+\newblock In Jean-Louis Scartezzini, editor, {\em {CISBAT}2015}, pages
+  301--306, Lausanne, 2015. LESO-PB, EPFL.
+
+\bibitem{Schwarz2014}
+M.~Schwarz and P.~Wonka.
+\newblock Procedural design of exterior lighting for buildings with complex
+  constraints.
+\newblock {\em ACM Trans. Graph.}, 33(5):166:1--166:16, 2014.
+
+\bibitem{Foley1994}
+J.~Foley, R.~Phillips, J.~Hughes, A.~van Dam, and S.~Feiner.
+\newblock {\em Introduction to Computer Graphics}.
+\newblock Addison-Wesley Longman Publishing Co., Inc., Boston, MA, USA, 1994.
+
+\bibitem{Jensen2001}
+H.~Jensen.
+\newblock {\em Realistic image synthesis using photon mapping}.
+\newblock A. K. Peters, Ltd., Natick, MA, USA, 2001.
+
+\bibitem{Sakas2001}
+G.~Sakas and P.~Shirley.
+\newblock {\em Photorealistic Rendering Techniques}.
+\newblock Springer-Verlag New York, Inc., Secaucus, NJ, USA, 2001.
+
+\bibitem{Kajiya1986}
+J.~T. Kajiya.
+\newblock The rendering equation.
+\newblock {\em SIGGRAPH Comput. Graph.}, 20(4):143--150, 1986.
+
+\bibitem{Glassner1994}
+A.~Glassner.
+\newblock {\em Principles of Digital Image Synthesis}.
+\newblock Morgan Kaufmann Publishers Inc., San Francisco, CA, USA, 1994.
+
+\bibitem{Chandrasekar1950}
+S.~Chandrasekar.
+\newblock {\em Radiative Transfer}.
+\newblock Oxford Univ. Press, 1950.
+
+\bibitem{Keller1997}
+A.~Keller.
+\newblock Instant radiosity.
+\newblock In {\em Proceedings of the 24th annual conference on Computer
+  graphics and interactive techniques}, pages 49--56, New York, NY, USA, 1997.
+  ACM Press/Addison-Wesley Publishing Co.
+
+\bibitem{Walter2005}
+B.~Walter, S.~Fernandez, A.~Arbree, K.~Bala, M.~Donikian, and D.~P. Greenberg.
+\newblock Lightcuts: a scalable approach to illumination.
+\newblock In {\em ACM SIGGRAPH 2005 Papers}, SIGGRAPH '05, pages 1098--1107,
+  New York, NY, USA, 2005. ACM.
+
+\bibitem{Hasan2007}
+M.~Ha\v{s}an, F.~Pellacini, and K.~Bala.
+\newblock Matrix row-column sampling for the many-light problem.
+\newblock {\em ACM Transactions on Graphics}, 26(3):26, 2007.
+
+\bibitem{Christensen2008}
+Christensen P.
+\newblock Point-based approximate coolor bleeding.
+\newblock Technical report, Pixar, 2008.
+
+\bibitem{Ritschel2009}
+T.~Ritschel, T.~Engelhardt, T.~Grosch, H.~P. Seidel, J.~Kautz, and
+  C.~Dachsbacher.
+\newblock Micro-rendering for scalable, parallel final gathering.
+\newblock In {\em ACM SIGGRAPH Asia 2009 papers}, SIGGRAPH Asia '09, pages
+  132:1--132:8, New York, NY, USA, 2009. ACM.
+
+\bibitem{Sloan2002}
+P.~Sloan, J.~Kautz, and J.~Snyder.
+\newblock Precomputed radiance transfer for real-time rendering in dynamic,
+  low-frequency lighting environments.
+\newblock In {\em Proceedings of the 29th annual conference on Computer
+  graphics and interactive techniques}, pages 527--536, New York, NY, USA,
+  2002. ACM.
+
+\bibitem{Cohen1986}
+M.~Cohen, D.~Greenberg, D.~Immel, and P.~Brock.
+\newblock An efficient radiosity approach for realistic image synthesis.
+\newblock {\em IEEE Computer Graphics and Applications}, 6(3):26--35, 1986.
+
+\bibitem{Ward1988}
+G.~Ward, F.~Rubinstein, and R.~Clear.
+\newblock A ray tracing solution for diffuse interreflection.
+\newblock In {\em Proceedings of the 15th annual conference on Computer
+  graphics and interactive techniques}, pages 85--92, New York, NY, USA, 1988.
+  ACM.
+
+\bibitem{Kuchkuda1988}
+R.~Kuchkuda.
+\newblock An introduction to ray tracing.
+\newblock In {\em F40, Theoretical Foundations of Computer Graphics and CAD,
+  edited by R.A. Earnshaw, Springer-Verlag}, pages 1039--1060. Springer, 1988.
+
+\bibitem{Dachsbacher2005}
+C.~Dachsbacher and M.~Stamminger.
+\newblock Reflective shadow maps.
+\newblock In {\em Proceedings of the 2005 Symposium on Interactive 3{D}
+  Graphics and Games}, pages 203--231, New York, NY, USA, 2005. ACM.
+
+\bibitem{Nijasure2005}
+M.~Nijasure, S.~Pattanaik, and V.~Goel.
+\newblock Realtime global illumination on {GPU}.
+\newblock {\em Journal of Graphics Tools}, 10(2):55--71, 2005.
+
+\bibitem{Gautron2008}
+P.~Gautron, J.~K\v{r}iv\'{a}nek, K.~Bouatouch, and S.~Pattanaik.
+\newblock Radiance cache splatting: a gpu-friendly global illumination
+  algorithm.
+\newblock In {\em ACM SIGGRAPH 2008 classes}, pages 1--10, New York, NY, USA,
+  2008. ACM.
+
+\bibitem{Ritschel2008}
+T.~Ritschel, T.~Grosch, M.~H. Kim, H.-P. Seidel, C.~Dachsbacher, and J.~Kautz.
+\newblock Imperfect shadow maps for efficient computation of indirect
+  illumination.
+\newblock {\em ACM Transactions on Graphics}, 27(5):1--8, 2008.
+
+\bibitem{Wang2009}
+R.~Wang, R.~Wang, K.~Zhou, M.~Pan, and H.~Bao.
+\newblock An efficient {GPU}-based approach for interactive global
+  illumination.
+\newblock In {\em ACM SIGGRAPH 2009 papers}, pages 1--8, New York, NY, USA,
+  2009. ACM.
+
+\bibitem{fernandez2012}
+E.~Fernández, P.~Ezzatti, S.~Nesmachnow, and G.~Besuievsky.
+\newblock Low-rank radiosity using sparse matrices.
+\newblock In Paul Richard, Martin Kraus, Robert~S. Laramee, and José Braz,
+  editors, {\em GRAPP/IVAPP}, pages 260--267. SciTePress, 2012.
+
+\bibitem{Appel1968}
+A.~Appel.
+\newblock Some techniques for shading machine renderings of solids.
+\newblock In {\em Proceedings of the April 30--May 2, 1968, Spring Joint
+  Computer Conference}, AFIPS '68 (Spring), pages 37--45, New York, NY, USA,
+  1968. ACM.
+
+\bibitem{Catmull1974}
+E.~Catmull.
+\newblock {\em A subdivision algorithm for computer display of curved
+  surfaces.}
+\newblock PhD thesis, The University of Utah, 1974.
+
+\bibitem{Dutre2006}
+P.~Dutre, K.~Bala, P.~Bekaert, and P.~Shirley.
+\newblock {\em Advanced Global Illumination}.
+\newblock AK Peters Ltd, 2006.
+
+\bibitem{Cohen1985}
+M.~Cohen and D.~Greenberg.
+\newblock The hemi-cube: a radiosity solution for complex environments.
+\newblock In {\em Proceedings of the 12th Annual Conference on Computer
+  Graphics and Interactive Techniques}, pages 31--40, 1985.
+
+\bibitem{Coombe2004}
+G.~Coombe, M.~Harris, and A.~Lastra.
+\newblock Radiosity on graphics hardware.
+\newblock In {\em Proceedings of Graphics Interface 2004}, pages 161--168.
+  Canadian Human-Computer Communications Society, 2004.
+
+\bibitem{Heidrich1998}
+W.~Heidrich and H.~Seidel.
+\newblock View-independent environment maps.
+\newblock In {\em Proceedings of the ACM SIGGRAPH/EUROGRAPHICS workshop on
+  Graphics hardware}, pages 39--45, New York, NY, USA, 1998. ACM.
+
+\bibitem{Blinn1976}
+J.~Blinn and M.~Newell.
+\newblock Texture and reflection in computer generated images.
+\newblock {\em Communications of the ACM}, 19(10):542--547, 1976.
+
+\bibitem{Sillion1989}
+F.~X. Sillion and C.~Puech.
+\newblock {A General Two-Pass Method Integrating Specular and Diffuse
+  Reflection}.
+\newblock In {\em {Proceedings of SIGGRAPH '89}}, pages 335--344, Boston,
+  United States, 1989. {ACM Press}.
+
+\bibitem{Sutherland1974}
+I.~E. Sutherland, R.~F. Sproull, and R.~A. Schumacker.
+\newblock A characterization of ten hidden-surface algorithms.
+\newblock {\em ACM Comput. Surv.}, 6(1):1--55, 1974.
+
+\bibitem{Baranoski1997}
+G.~V.~G. Baranoski, R.~Bramley, and J.~G. Rokne.
+\newblock Eigen-analysis for radiosity systems.
+\newblock In {\em Proceedings of the Sixth International Conference on
+  Computational Graphics and Visualization Techniques (Compugraphics '97)},
+  pages 193--201, Vilamoura, Algarve, Portugal, December 1997.
+
+\bibitem{Ashdown2001}
+I.~Ashdown.
+\newblock Eigenvector radiosity.
+\newblock Master's thesis, Department of Computer Science, University of
+  British Columbia, Vancouver, British Columbia, April 2001.
+
+\bibitem{Fernandez2009}
+E.~Fern\'{a}ndez.
+\newblock Low-rank radiosity.
+\newblock In O.~Rodr\'iguez, F.~Ser\'on, R.~Joan-Arinyo, and E.~Coto
+  J.~Madeiras, J.~Rodr\'iguez, editors, {\em Proceedings of the IV
+  Iberoamerican Symposium in Computer Graphics}, pages 55--62. Sociedad
+  Venezolana de Computaci\'on Gr\'afica, DJ Editores, C.A., June 2009.
+
+\bibitem{Golub2013}
+G.~H. Golub and C.~F. Van~Loan.
+\newblock {\em Matrix Computations}.
+\newblock Johns Hopkins Studies in the Mathematical Sciences. Johns Hopkins
+  University Press, 2013.
+
+\bibitem{Fernandez2015}
+E.~Fern\'{a}ndez and G.~Besuievsky.
+\newblock Inverse opening design with anisotropic lighting incidence.
+\newblock {\em Computers and Graphics}, 47(1):113--122, 2015.
+
+\bibitem{Goreinov1997}
+S.~Goreinov, E.~Tyrtyshnikov, and N.~Zamarashkin.
+\newblock A theory of pseudoskeleton approximations.
+\newblock {\em Linear Algebra and its Applications}, 261:1--21, 1997.
+
+\bibitem{Aguerre2016}
+J.~P. Aguerre and E.~Fern{\'{a}}ndez.
+\newblock A hierarchical factorization method for efficient radiosity
+  calculations.
+\newblock {\em Computers {\&} Graphics}, 60:46--54, 2016.
+
+\bibitem{Stewart1998}
+G.~Stewart.
+\newblock {\em Matrix Algorithms -- Volume I: Basic Decompositions}.
+\newblock Society for Industrial and Applied Mathematics, 1998.
+
+\bibitem{Tarantola2004}
+A.~Tarantola.
+\newblock {\em Inverse Problem Theory and Methods for Model Parameter
+  Estimation}.
+\newblock Society for Industrial and Applied Mathematics, Philadelphia, PA,
+  USA, 2004.
+
+\bibitem{Hansen1992}
+P.~C. Hansen, T.~Sekii, and H.~Shibahashi.
+\newblock The modified truncated svd method for regularization in general form.
+\newblock {\em SIAM J. Sci. Stat. Comput.}, 13(5):1142--1150, September 1992.
+
+\bibitem{Hadamard1902}
+J.~Hadamard.
+\newblock Sur les probl\`{e}mes aux d\'{e}riv\'{e}s partielles et leur
+  signification physique.
+\newblock {\em Princeton University Bulletin}, 13:49--52, 1902.
+
+\bibitem{Ramamoorthi2001}
+R.~Ramamoorthi and P.~Hanrahan.
+\newblock On the relationship between radiance and irradiance: determining the
+  illumination from images of a convex lambertian object.
+\newblock {\em J. Opt. Soc. Am. A}, 18(10):2448--2459, October 2001.
+
+\bibitem{Harutunian1995}
+V.~Harutunian, J.~C. Morales, and J.~R. Howell.
+\newblock Radiation exchange within an enclosure of diffuse-gray surfaces: The
+  inverse problem.
+\newblock Inverse Problems in Heat Transfer, ASME/AIChE National Heat Transfer
+  Conference, Portland, USA, 1995.
+
+\bibitem{Dantzig2010}
+G.~Dantzig.
+\newblock The nature of mathematical programming, 2010.
+
+\bibitem{Cook1998}
+W.~J. Cook, W.~H. Cunningham, W.~R. Pulleyblank, and A.~Schrijver.
+\newblock {\em Combinatorial Optimization}.
+\newblock John Wiley \& Sons, Inc., New York, NY, USA, 1998.
+
+\bibitem{Garey1990}
+M.~R. Garey and D.~S. Johnson.
+\newblock {\em Computers and Intractability; A Guide to the Theory of
+  NP-Completeness}.
+\newblock W. H. Freeman \& Co., New York, NY, USA, 1990.
+
+\bibitem{MPISpec2009}
+{Message Passing Interface Forum}.
+\newblock Mpi: A message-passing interface standard, version 2.2.
+\newblock Specification, September 2009.
+
+\bibitem{White2009}
+T.~White.
+\newblock {\em Hadoop: The Definitive Guide}.
+\newblock O'Reilly Media, Inc., 1st edition, 2009.
+
+\bibitem{Zaharia2010}
+M.~Zaharia, M.~Chowdhury, M.~J. Franklin, S.~Shenker, and I.~Stoica.
+\newblock Spark: Cluster computing with working sets.
+\newblock In {\em Proceedings of the 2Nd USENIX Conference on Hot Topics in
+  Cloud Computing}, HotCloud'10, pages 10--10, Berkeley, CA, USA, 2010. USENIX
+  Association.
+
+\bibitem{Pearl1984}
+J.~Pearl.
+\newblock {\em Heuristics: Intelligent Search Strategies for Computer Problem
+  Solving}.
+\newblock Addison-Wesley Longman Publishing Co., Inc., Boston, MA, USA, 1984.
+
+\bibitem{Osman1996}
+I.~Osman and G.~Laporte.
+\newblock {Metaheuristics: A bibliography}.
+\newblock {\em Annals of Operations Research}, 63(5):511--623, 1996.
+
+\bibitem{Blum2003}
+C.~Blum and A.~Roli.
+\newblock Metaheuristics in combinatorial optimization: Overview and conceptual
+  comparison.
+\newblock {\em ACM Comput. Surv.}, 35(3):268--308, 2003.
+
+\bibitem{Papadimitriou1982}
+C.~H. Papadimitriou and K.~Steiglitz.
+\newblock {\em Combinatorial optimization: algorithms and complexity}.
+\newblock Prentice-Hall, Inc., Upper Saddle River, NJ, USA, 1982.
+
+\bibitem{Kargupta1997}
+H.~Kargupta and D.~E. Goldberg.
+\newblock Search, blackbox optimization, and sample complexity.
+\newblock In {\em In R.K. Belew \& M. Vose (Eds.) Foundations of Genetic
+  Algorithms 4}, pages 291--324. Morgan Kaufman, 1997.
+
+\bibitem{Atallah1999}
+M.~J. Atallah.
+\newblock {\em Handbook of algorithms and theory of computing}.
+\newblock {CRC} Press, 1999.
+
+\bibitem{Krzysztof2003}
+A.~Krzysztof.
+\newblock {\em Principles of Constraint Programming}.
+\newblock Cambridge University Press, New York, NY, USA, 2003.
+
+\bibitem{Kalyanmoy2001}
+K.~Deb and D.~Kalyanmoy.
+\newblock {\em Multi-Objective Optimization Using Evolutionary Algorithms}.
+\newblock John Wiley \& Sons, Inc., New York, NY, USA, 2001.
+
+\bibitem{Coello2006}
+C.~Coello, G.~B. Lamont, and D.~A. van Veldhuizen.
+\newblock {\em Evolutionary Algorithms for Solving Multi-Objective Problems
+  (Genetic and Evolutionary Computation)}.
+\newblock Springer-Verlag New York, Inc., Secaucus, NJ, USA, 2006.
+
+\bibitem{Luenberger2015}
+D.~G. Luenberger and Y.~Ye.
+\newblock {\em Linear and Nonlinear Programming}.
+\newblock Springer Publishing Company, Incorporated, 2015.
+
+\bibitem{Kirkpatrick1983}
+S.~Kirkpatrick, C.~D. Gelatt, and M.~P. Vecchi.
+\newblock Optimization by simulated annealing.
+\newblock {\em Science}, 220(4598):671--680, 1983.
+
+\bibitem{Golub1996}
+G.~H. Golub and C.~F. Van~Loan.
+\newblock {\em Matrix computations (3rd ed.)}.
+\newblock Johns Hopkins University Press, Baltimore, MD, USA, 1996.
+
+\bibitem{Goldfeld1966}
+S.~M. Goldfeld, R.~E. Quandt, and H.~F. Trotter.
+\newblock {\em {Maximization by Quadratic Hill-Climbing}}, volume~34.
+\newblock The Econometric Society, 1966.
+
+\bibitem{Russell2003}
+S.~J. Russell and P.~Norvig.
+\newblock {\em Artificial Intelligence: A Modern Approach}.
+\newblock Pearson Education, 2 edition, 2003.
+
+\bibitem{Castro2009}
+F.~Castro, E.~Acebo, and M.~Sbert.
+\newblock Heuristic-search-based light positioning according to irradiance
+  intervals.
+\newblock In Andreas Butz, Brian Fisher, Marc Christie, Antonio Kr\"uger,
+  Patrick Olivier, and Roberto Ther\'on, editors, {\em Smart Graphics}, volume
+  5531 of {\em Lecture Notes in Computer Science}, pages 128--139. Springer
+  Berlin Heidelberg, 2009.
+
+\bibitem{Castro2012}
+F.~Castro, E.~del Acebo, and M.~Sbert.
+\newblock Energy-saving light positioning using heuristic search.
+\newblock {\em Engineering Applications of Artificial Intelligence},
+  25(3):566--582, 2012.
+
+\bibitem{Schoeneman1993}
+C.~Schoeneman, J.~Dorsey, B.~Smits, J.~Arvo, and D.~Greenberg.
+\newblock Painting with light.
+\newblock In {\em Proceedings of the 20th Annual Conference on Computer
+  Graphics and Interactive Techniques}, SIGGRAPH '93, pages 143--146, New York,
+  NY, USA, 1993. ACM.
+
+\bibitem{Kawai1993}
+J.~K. Kawai, J.~S. Painter, and M.~F. Cohen.
+\newblock Radioptimization: goal based rendering.
+\newblock In Mary~C. Whitton, editor, {\em SIGGRAPH}, pages 147--154. ACM,
+  1993.
+
+\bibitem{Costa1999}
+A.~C. Costa, A.~A. de~Sousa, and F.~N. Ferreira.
+\newblock Lighting design: A goal based approach using optimisation.
+\newblock In Dani Lischinski and Gregory~Ward Larson, editors, {\em Rendering
+  Techniques}, Eurographics, pages 317--328. Springer, 1999.
+
+\bibitem{Ward1994}
+G.~J. Ward.
+\newblock The radiance lighting simulation and rendering system.
+\newblock In {\em Proceedings of the 21st Annual Conference on Computer
+  Graphics and Interactive Techniques}, SIGGRAPH '94, pages 459--472, New York,
+  NY, USA, 1994. ACM.
+
+\bibitem{Pellacini2007}
+F.~Pellacini, F.~Battaglia, R.~K. Morley, and A.~Finkelstein.
+\newblock Lighting with paint.
+\newblock {\em ACM Trans. Graph.}, 26(2):Article 9, 2007.
+
+\bibitem{Mladenovic1997}
+N.~Mladenovic and P.~Hansen.
+\newblock Variable neighborhood search.
+\newblock {\em Computers \& Operations Research}, 24(11):1097--1100, 1997.
+
+\bibitem{Gendreau2010}
+M.~Gendreau and J.~Potvin.
+\newblock {\em Handbook of Metaheuristics}.
+\newblock Springer Publishing Company, Incorporated, 2nd edition, 2010.
+
+\bibitem{Brownlee2011}
+J.~Brownlee.
+\newblock {\em Clever Algorithms: Nature-Inspired Programming Recipes}.
+\newblock Lulu.com, 1st edition, 2011.
+
+\bibitem{Hansen2001}
+P.~Hansen, N.~Mladenovic, and D.~P{\'{e}}rez{-}Brito.
+\newblock Variable neighborhood decomposition search.
+\newblock {\em J. Heuristics}, 7(4):335--350, 2001.
+
+\bibitem{Baar1999}
+T.~Baar, P.~Brucker, and S.~Knust.
+\newblock {\em Meta-Heuristics: Advances and Trends in Local Search Paradigms
+  for Optimization}.
+\newblock Springer US, 1 edition, 1999.
+
+\bibitem{Fernadez2012}
+E.~Fern{\'a}ndez and G.~Besuievsky.
+\newblock Inverse lighting design for interior buildings integrating natural
+  and artificial sources.
+\newblock {\em Computers \& Graphics}, 36(8):1096--1108, 2012.
+
+\bibitem{Goldberg1989}
+D.~E. Goldberg.
+\newblock {\em Genetic Algorithms in Search, Optimization and Machine
+  Learning}.
+\newblock Addison-Wesley Longman Publishing Co., Inc., Boston, MA, USA, 1st
+  edition, 1989.
+
+\bibitem{Back1997}
+T.~Back, D.~B. Fogel, and Z.~Michalewicz, editors.
+\newblock {\em Handbook of Evolutionary Computation}.
+\newblock IOP Publishing Ltd., Bristol, UK, UK, 1st edition, 1997.
+
+\bibitem{Mitchell1998}
+M.~Mitchell.
+\newblock {\em An Introduction to Genetic Algorithms}.
+\newblock MIT Press, Cambridge, MA, USA, 1998.
+
+\bibitem{Rechenberg1965}
+I.~Rechenberg.
+\newblock {Cybernetic solution path of an experimental problem}.
+\newblock In {\em Royal Aircraft Establishment Translation No. 1122, B. F.
+  Toms, Trans.} Ministry of Aviation, Royal Aircraft Establishment, Farnborough
+  Hants, 1965.
+
+\bibitem{Schwefel1975}
+H.~P. Schwefel.
+\newblock {\em Evolutionsstrategie und numerische Optimierung}.
+\newblock Technische Universit{\"a}t Berlin, 1975.
+
+\bibitem{Holland1975}
+J.~H. Holland.
+\newblock {\em Adaptation in Natural and Artificial Systems}.
+\newblock University of Michigan Press, Ann Arbor, MI, 1975.
+\newblock second edition, 1992.
+
+\bibitem{Spears2000}
+W.~M. Spears.
+\newblock {\em Evolutionary algorithms : the role of mutation and
+  recombination}.
+\newblock Springer, Berlin, Germany, 2000.
+
+\bibitem{Elorza1997}
+J.~E. Tena, I.~Rudomin, A.~Eugenio, G.~Sada, and C.~Gordo.
+\newblock An interactive system for solving inverse illumination problems using
+  genetic algorithms.
+\newblock {\em Proceedings of computaci{\'o}n visual}, 1997.
+
+\bibitem{Ferentinos2005}
+K.~P. Ferentinos and L.~D. Albright.
+\newblock Optimal design of plant lighting system by genetic algorithms.
+\newblock {\em Engineering Applications of Artificial Intelligence},
+  18(4):473--484, 2005.
+
+\bibitem{Delepoulle2009}
+S.~Delepoulle, C.~Renaud, and M.~Chelle.
+\newblock Genetic algorithms for light sources positioning.
+\newblock In {\em Proceedings of the 11th 3IA: International Conference on
+  Computer Graphics and Artificial Intelligence}.
+
+\bibitem{Flynn1972}
+M.~J. Flynn.
+\newblock Some computer organizations and their effectiveness.
+\newblock {\em IEEE Trans. Comput.}, 21(9):948--960, 1972.
+
+\bibitem{Davidovic2013}
+T.~Davidovi{\'c} and T.~G. Crainic.
+\newblock {\em Parallelization strategies for variable neighborhood search}.
+\newblock CIRRELT, Centre interuniversitaire de recherche sur les r{\'e}seaux
+  d'entreprise, la logistique et le transport= Interuniversity Research Centre
+  on Enterprise Networks, Logistics and Transportation, 2013.
+
+\bibitem{Decia2017}
+I.~Decia, R.~Leira, M.~Pedemonte, E.~Fern{\'{a}}ndez, and P.~Ezzatti.
+\newblock A {VNS} with parallel evaluation of solutions for the inverse
+  lighting problem.
+\newblock In {\em Applications of Evolutionary Computation - 20th European
+  Conference, EvoApplications 2017, Amsterdam, The Netherlands, April 19-21,
+  2017, Proceedings, Part {I}}, pages 741--756, 2017.
+
+\bibitem{Benner2013}
+P.~Benner, P.~Ezzatti, E.~Quintana-Ort\'{\i}, and A.~Rem\'{o}n.
+\newblock On the impact of optimization on the time-power-energy balance of
+  dense linear algebra factorizations.
+\newblock In {\em Proceedings of the 13th International Conference on
+  Algorithms and Architectures for Parallel Processing - Volume 8286}, ICA3PP
+  2013, pages 3--10, New York, NY, USA, 2013. Springer-Verlag New York, Inc.
+
+\bibitem{Das2011}
+S.~Das, S.~Maity, B.~Qu, and P.~N. Suganthan.
+\newblock Real-parameter evolutionary multimodal optimization \- a survey of
+  the state-of-the-art.
+\newblock {\em Swarm and Evolutionary Computation}, 1(2):71--88, 2011.
+
+\bibitem{Petrowski1996}
+A.~Pétrowski.
+\newblock A clearing procedure as a niching method for genetic algorithms.
+\newblock In {\em International Conference on Evolutionary Computation}, pages
+  798--803, 1996.
+
+\bibitem{iesna1995iesna}
+IESNA-Computer-Committee.
+\newblock {\em IESNA standard file format for electronic transfer of
+  photometric data}.
+\newblock IESNA lighting measurements series. Illuminating Engineering Society
+  of North America, 1995.
+
+\bibitem{helios}
+Heart~Consultants Limited.
+\newblock Freeware eulumdat to ies lm-63-1995 conversion utility.
+\newblock \url{http://www.helios32.com/resources.htm#Formats}.
+
+\bibitem{philips}
+Philips.
+\newblock Philips lighting holding b.v.,
+  http://www.lighting.philips.com/main/sup-
+  port/support/dialux-and-other-downloads.html, September 2016.
+
+\bibitem{cree}
+Cree.
+\newblock Cree europe s.r.l a s.u.,
+  http://www.cree-europe.com/en/doc-tecnica-dbf.php, September 2016.
+
+\bibitem{Glover1997}
+F.~Glover and M.~Laguna.
+\newblock {\em Tabu Search}.
+\newblock Kluwer Academic Publishers, Norwell, MA, USA, 1997.
+
+\bibitem{matlabGASolver}
+The~MathWorks Inc.
+\newblock Ga solver.
+\newblock \url{http://www.mathworks.com/help/gads/ga.html}.
+
+\bibitem{LightAndLighting2011}
+British Standards~Institute Staff, British~Standards Institution, and
+  European~Committee for Standardization.~CPL/34/10.
+\newblock {\em Light and Lighting - Lighting of Work Places: Indoor work
+  places. Part 1}.
+\newblock BSI, 2011.
+
+\bibitem{Canavos1984}
+G.~C. Canavos.
+\newblock {\em Applied probability and statistical methods.}
+\newblock Little, Brown, 1984.
+
+\bibitem{mallba}
+Mallba library.
+\newblock \url{http://neo.lcc.uma.es/mallba/easy-mallba/html/mallba.html}.
+
+\bibitem{Wong2012}
+K.~Wong, C.~Wu, R.~K.~P. Mok, C.~Peng, and Z.~Zhang.
+\newblock Evolutionary multimodal optimization using the principle of locality.
+\newblock {\em Inf. Sci.}, 194:138--170, 2012.
+
+\end{thebibliography}
